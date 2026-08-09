@@ -1,0 +1,11 @@
+{
+  "name": "planetarium",
+  "version": "11.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check": "node scripts/check-project.mjs",
+    "test": "node --test",
+    "verify": "npm run check && npm test"
+  }
+}
