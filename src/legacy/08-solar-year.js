@@ -4,7 +4,8 @@
 (function(){
   if(window.__v9SolarYearSimulation) return;
   window.__v9SolarYearSimulation = true;
-  let solarTimer = null;
+  const scheduler = window.__planetariumScheduler;
+  const solarTimerName = 'solar-year';
   let solarActive = false;
   let solarDayIndex = 0;
   let solarLayerState = null;
@@ -174,7 +175,7 @@
   }
   function stopSolarYear(){
     solarActive=false;
-    if(solarTimer){clearInterval(solarTimer); solarTimer=null;}
+    if(scheduler)scheduler.cancel(solarTimerName);
     if(window.didacticSimulationMode==='solar-year') window.didacticSimulationMode=null;
     restoreSolarLayers();
     solarTrail=[];
@@ -200,7 +201,7 @@
     if(typeof scrollToSky==='function') scrollToSky();
     if(typeof showToast==='function') showToast('Sonnenjahr · 5 Tage/s · feste Uhrzeit ohne Sommerzeit · Analemma entsteht');
     solarActive=true;
-    solarTimer=setInterval(()=>{
+    scheduler.every(solarTimerName,()=>{
       if(!solarActive) return;
       if(typeof paused!=='undefined' && paused) return;
       solarDayIndex += 1;

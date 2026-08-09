@@ -5,6 +5,12 @@
 Die ursprüngliche Einzeldatei wurde zunächst verlustfrei zerlegt. `src/legacy/01-core.js`
 enthält den historischen Kern; die Dateien `02` bis `14` entsprechen den anschließend
 angewendeten Erweiterungen. Ihre Reihenfolge darf bis zu ihrer Ablösung nicht verändert werden.
+`00-scheduler.js` wird direkt nach dem Kern geladen und verwaltet benannte
+Simulationsintervalle zentral.
+
+Der Browser lädt bevorzugt den vorab verdichteten Katalog `gaia_compact.bin`.
+Rohkataloge werden über `src/workers/gaiaWorker.js` außerhalb des UI-Threads in
+dasselbe Format konvertiert.
 
 Neue Funktionalität greift nicht direkt auf globale Legacy-Variablen zu. Zustandswerte laufen
 über `src/app/legacyAdapter.js`; noch globale Bedienfunktionen werden ausschließlich durch
@@ -13,6 +19,11 @@ die beiden UI-Adapter und ihren gemeinsamen `legacyFunctionResolver.js` aufgelö
 Noch bestehende klassische Erweiterungsskripte verwenden ausschließlich die explizite
 `window.__planetariumLegacy`-API aus `01-core.js`. Dynamisches `eval()` ist entfernt und wird
 durch die Projektprüfung verhindert.
+
+Browser- und Ladezeitbelange liegen unter `src/platform/`. Verzögerte Stylesheets werden
+deklarativ mit `data-deferred-stylesheet` markiert und durch
+`deferredResources.js` nach dem ersten Paint aktiviert. Der Einstiegspunkt `main.js`
+enthält dadurch keine ressourcenspezifische DOM-Logik mehr.
 
 Der moderne Bootstrap liest seinen initialen Zustand ebenfalls über diese API. Damit stammen
 Standort, Simulationszeit und Ansicht nicht mehr aus unzuverlässigen `window`-Nebenwirkungen.

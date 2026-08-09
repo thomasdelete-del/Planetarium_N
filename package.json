@@ -4,6 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "build:gaia": "node scripts/build-gaia-compact.mjs",
+    "build:changelog": "node scripts/extract-changelog.mjs",
     "check": "node scripts/check-project.mjs",
     "test": "node --test",
     "verify": "npm run check && npm test"

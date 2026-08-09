@@ -4,9 +4,10 @@ Interaktives, browserbasiertes Planetarium mit didaktischen Szenen, Simulationen
 und Sternbild-Lernmodus. Das Projekt benötigt keinen Build-Schritt und kann als
 statische Website veröffentlicht werden.
 
-Der enthaltene Katalog `gaia_merged.bin` liefert 482.176 Gaia-DR3-Sterne. Die
-Anwendung findet ihn beim Start automatisch, bereitet ihn einmalig auf und legt
-die optimierte Fassung anschließend im Browser-Speicher ab.
+Der Rohkatalog `gaia_merged.bin` liefert 482.176 Gaia-DR3-Sterne. Für den normalen
+Start lädt die Anwendung direkt `gaia_compact.bin` mit 481.880 deduplizierten
+Sternen. Importierte Rohkataloge werden in einem Web Worker aufbereitet, damit
+die Oberfläche dabei bedienbar bleibt.
 
 ## Lokal starten
 
@@ -21,6 +22,7 @@ Danach `http://127.0.0.1:4173/` öffnen.
 ```powershell
 npm test
 npm run check
+npm run build:gaia
 ```
 
 ## GitHub Pages

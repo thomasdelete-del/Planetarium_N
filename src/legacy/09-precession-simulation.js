@@ -25,9 +25,10 @@
      WICHTIG (siehe Build 20260804l): precessionTimer muss hier deklariert sein, sonst
      wirft stopPrecessionRun() beim ersten Aufruf sofort einen ReferenceError - das war die
      genaue Ursache des zuletzt gemeldeten Absturzes. */
-  let precessionTimer = null;
+  const scheduler = window.__planetariumScheduler;
+  const precessionTimerName = 'precession';
   function stopPrecessionRun(){
-    if(precessionTimer){ clearInterval(precessionTimer); precessionTimer = null; }
+    if(scheduler)scheduler.cancel(precessionTimerName);
     if(window.didacticSimulationMode === 'precession') window.didacticSimulationMode = null;
   }
   function setPrecessionYear(y){
@@ -58,7 +59,7 @@
       try{ const b=document.getElementById('bn'); if(b) b.classList.toggle('on', !!showNames); }catch(_){ }
       try{ if(typeof setSpeedValue === 'function') setSpeedValue(1); }catch(_){ }
       if(typeof setPaused === 'function') setPaused(false); else if(typeof paused!=='undefined') paused = false;
-      precessionTimer = setInterval(stepPrecessionYears,1000);
+      scheduler.every(precessionTimerName,stepPrecessionYears,1000);
       if(typeof showToast === 'function') showToast('Präzession · 100 Jahre/s · Polarstern, Errai, Alderamin, Vega');
       if(typeof draw === 'function' && typeof W !== 'undefined' && W) draw();
     },260);

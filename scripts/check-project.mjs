@@ -32,8 +32,19 @@ if (gaiaHeader.toString("ascii", 0, 4) !== "GDR3" || gaiaVersion !== 1) {
 if (gaiaActualSize !== gaiaExpectedSize) {
   throw new Error(`Gaia-Katalog ist unvollständig: ${gaiaActualSize} statt ${gaiaExpectedSize} Byte.`);
 }
-if ((html.match(/<script\b/g) || []).length !== 15) {
-  throw new Error("Es werden 14 Legacy-Skripte und ein Modul-Bootstrap erwartet.");
+const compactGaiaPath = path.join(root, "gaia_compact.bin");
+const compactGaia = fs.readFileSync(compactGaiaPath);
+const compactCount = compactGaia.readUInt32LE(8);
+const compactGridCells = compactGaia.readUInt16LE(20) * compactGaia.readUInt16LE(22);
+const compactExpectedSize = 32 + 4 * (compactGridCells + 1) + 10 * compactCount;
+if (compactGaia.toString("ascii", 0, 4) !== "GDR3" || compactGaia.readUInt32LE(4) !== 1) {
+  throw new Error("Kompakter Gaia-Katalog besitzt keine unterstützte GDR3-Kennung.");
+}
+if (compactGaia.length !== compactExpectedSize || compactCount >= gaiaRecordCount) {
+  throw new Error("Kompakter Gaia-Katalog ist inkonsistent oder nicht verdichtet.");
+}
+if ((html.match(/<script\b/g) || []).length !== 16) {
+  throw new Error("Es werden 15 Legacy-Skripte und ein Modul-Bootstrap erwartet.");
 }
 if (/onclick="[^"]*\b(?:jumpScene|selectScene)\(/.test(html)) {
   throw new Error("HTML darf keinen Szenen-Dispatcher direkt aufrufen.");
@@ -119,6 +130,6 @@ for (const migrated of [
 console.log(
   `Projektprüfung erfolgreich: ${references.length} lokale Referenzen, ` +
   `${moduleImportCount} Modulimporte, ${htmlIds.length} eindeutige HTML-IDs, ` +
-  `14 Legacy-Skripte, Gaia DR3 mit ${gaiaRecordCount.toLocaleString("de-DE")} Datensätzen, ` +
+  `15 Legacy-Skripte, Gaia DR3 roh/kompakt mit ${gaiaRecordCount.toLocaleString("de-DE")}/${compactCount.toLocaleString("de-DE")} Datensätzen, ` +
   "keine Inline-Handler."
 );
