@@ -136,8 +136,8 @@
   <button class="yb-btn yb-play" id="yb-play" title="Jahreslauf starten / anhalten">▶</button>
 </div>
 <div id="yb-hint">◂/▸: 1 Jahr · Halten: 10 J, dann 100 J · ▶ Jahreslauf</div>
-<div id="wrap"><canvas id="cv"></canvas></div>
-<div id="panel-handle"><button id="bhome" class="homebtn" data-action="home-view" title="Jetzt · aktuelle Zeit">Jetzt</button><button id="bpause" class="homebtn pausebtn" data-action="toggle-animation" title="Zeit starten / anhalten"><span class="bsym">▶</span></button><button id="borient" class="homebtn pausebtn" data-action="toggle-orientation" title="Gerätelage: Handy in den Himmel halten – zeigt nur das Gesichtsfeld, begrenzt durch den Horizont"><span class="bsym">📱</span></button><button id="bview" class="homebtn pausebtn" data-action="toggle-view-mode" title="Umschalten: Gesamter Himmel / Realistischer Blick zum Horizont"><span class="bsym">👁</span></button></div>
+<div id="wrap"><video id="vr-camera-feed" autoplay muted playsinline aria-hidden="true"></video><canvas id="cv"></canvas></div>
+<div id="panel-handle"><button id="bhome" class="homebtn" data-action="home-view" title="Jetzt · aktuelle Zeit">Jetzt</button><button id="bpause" class="homebtn pausebtn" data-action="toggle-animation" title="Zeit starten / anhalten"><span class="bsym">▶</span></button><button id="borient" class="homebtn pausebtn" data-action="toggle-orientation" title="Gerätelage: Handy in den Himmel halten – zeigt nur das Gesichtsfeld, begrenzt durch den Horizont"><span class="bsym">📱</span></button><button id="bvr" class="homebtn pausebtn" data-action="toggle-vr-camera" title="VR: Sternkarte im Lagemodus über das Bild der rückseitigen Handykamera legen" aria-pressed="false"><span class="bsym">📷</span></button><button id="bview" class="homebtn pausebtn" data-action="toggle-view-mode" title="Umschalten: Gesamter Himmel / Realistischer Blick zum Horizont"><span class="bsym">👁</span></button></div>
 <button id="bview-fs" data-action="toggle-view-mode" title="Gesamter Himmel / Realistischer Blick"><span class="bsym">👁</span></button>
 <button id="orient-calib" data-action="calibrate-orientation" title="Kompass im Lagemodus auf die aktuelle Blickrichtung kalibrieren">◎ Kalibrieren</button>
 <div id="orient-fallback-note">Alldocube-Fallback: Richtung manuell einstellen · ◀ ▶ Azimut · ▲ ▼ Höhe · ◀ ▶ Azimut · ▲ ▼ Höhe</div>
@@ -351,6 +351,8 @@
       <div class="ag-row"><b>Mit Kompass:</b> Wenn Magnetometer und Bewegungssensor verfügbar sind, richtet sich der Himmel automatisch nach der Gerätehaltung aus.</div>
       <div class="ag-row"><b>Nur Gyroskop:</b> Die App kann relative Drehungen nutzen, kennt aber keine absolute Nordrichtung. Deshalb muss der Blick manuell kalibriert werden.</div>
       <div class="ag-row"><b>Alldocube / Fallback:</b> Wenn kein echter Kompass verfügbar ist, startet eine manuelle Lage-Steuerung statt eines fehlerhaften Kompassmodus.</div>
+      <div class="ag-row"><b>Objekte:</b> Ein einfaches Antippen zeigt die Informationen zum Objekt. Ein Doppeltipp reagiert wie im Beobachtermodus und schaltet die immersive Ansicht um.</div>
+      <div class="ag-row"><b>📷 VR:</b> Legt die Sternkarte halbtransparent über das Livebild der rückseitigen Handykamera. Beim Einschalten wird zugleich der Lagemodus aktiviert; beim Beenden des Lagemodus endet auch die Kameraübertragung.</div>
       <div class="ag-row"><b>HTTPS:</b> Gerätesensoren und GPS funktionieren zuverlässig nur auf der veröffentlichten HTTPS-Seite, nicht beim lokalen Öffnen der Datei.</div>
     </div>
 

@@ -187,6 +187,11 @@ body{display:block;min-height:0;height:100vh;height:100dvh;overflow:hidden}
 .snap{scroll-snap-align:none;position:relative}
 #page-sky{height:100vh;height:100dvh;scroll-margin:0;overflow:hidden;background:#04030a}
 #page-sky #wrap{position:absolute;inset:0;width:100%;height:100%;transform:none;touch-action:pan-y;z-index:1}
+#vr-camera-feed{display:none;position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#000;z-index:0;pointer-events:none}
+#cv{position:relative;z-index:1}
+body.vr-mode #vr-camera-feed{display:block}
+body.vr-mode #cv{opacity:.58}
+body.vr-mode #wrap{background:#000}
 #page-sky > header{position:absolute}
 #panel-handle{position:fixed}
 #panel-handle .homebtn{font-size:.56rem;padding:.24rem .36rem;white-space:nowrap}

@@ -70,6 +70,7 @@ export function createLegacyUiActions(globalObject = window) {
 
   const devicesAndMedia = {
     "toggle-orientation": call("toggleOrient"),
+    "toggle-vr-camera": call("toggleVrCamera"),
     "toggle-view-mode": call("toggleViewMode"),
     "calibrate-orientation": call("calibrateOrient"),
     "manual-orientation": ({ element }) => {
