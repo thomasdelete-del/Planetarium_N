@@ -167,16 +167,21 @@ function mwFleck(g,P,r,b,dunkel){
   gr.addColorStop(1,"rgba("+c+",0)");
   g.beginPath();g.arc(P.x,P.y,r,0,Math.PI*2);g.fillStyle=gr;g.fill();
 }function getDOY(d){return Math.floor((d-new Date(d.getFullYear(),0,0))/864e5)}const MN=["Jan","Feb","Mär","Apr","Mai","Jun","Jul","Aug","Sep","Okt","Nov","Dez"];function isLeap(y){return y%4===0&&y%100!==0||y%400===0}function monthDays(y){return[31,isLeap(y)?29:28,31,30,31,30,31,31,30,31,30,31]}function daysInYear(y){return isLeap(y)?366:365}const MD=monthDays(2e3);function doy2date(dy,y){const md=monthDays(y||simYear);let d=Math.floor(dy),m=0;while(m<11&&d>md[m]){d-=md[m];m++}return{d:d,m:m}}function date2doy(day,mon,y){const md=monthDays(y||simYear);let doy=day;for(let i=0;i<mon;i++)doy+=md[i];return doy}function hhmm(h){const n=(h%24+24)%24,hh=Math.floor(n),mm=Math.round((n-hh)*60);return`${String(hh).padStart(2,"0")}:${String(mm%60).padStart(2,"0")}`}const n0=new Date;let simYear=n0.getFullYear();let simDay=getDOY(n0)||1,simMin=n0.getHours()*60+n0.getMinutes();let lat=48,lng=11.6;function tzFromLng(lo){if(lo>=-10&&lo<=25&&typeof lat!=="undefined"&&lat>=35&&lat<=72)return 1;return Math.round(lo/15)}let utcBase=tzFromLng(lng),dstOffset=0,utcOff=utcBase;window.telescope=false;let paused=false,speed=136,userSpeed=136,showNames=true,showHorizon=false,showAlt=false,showISS=false,zoom=1,showRA=false,showLines=true,showRefCircles=true,showTwilight=false,showZodiac=true;let showMeteors=true,showJMoons=true;let viewMode="dome",camAz=0,camAlt=26,camFov=65,showGround=true;let focusConstellation=null;let meteorParticles=[],lastMeteorT=0,meteorSpawnAcc=0;let BSC=[];let bscPrecYear=null;let lastBscPrec=0;let bscPrecTargetYear=null;let bscPrecCursor=0;let gaiaPrecTargetYear=null;let gaiaPrecCursor=0;window.skyMagBase=5.5;
-function setSkyQuality(m){
+function setSkyQuality(m,source){
   window.skyMagBase=m;
   ["skyq-city","skyq-land","skyq-dark"].forEach(id=>{
     const b=document.getElementById(id);if(b)b.classList.remove("on");
   });
   const akt=m<=4.5?"skyq-city":(m<=5.5?"skyq-land":"skyq-dark");
   const b=document.getElementById(akt);if(b)b.classList.add("on");
+  const status=document.getElementById("skyq-auto-status");
+  if(status&&source!=="auto")status.textContent="Manuell gewählt · beim nächsten Standortwechsel wieder automatisch";
   if(typeof draw==="function")try{draw()}catch(e){}
 }
-function buildStarField(){const d2r=Math.PI/180,r2d=180/Math.PI;const aNGP=192.85948*d2r,dNGP=27.12825*d2r,lNCP=122.93192*d2r;function gal2eq(l,b){l*=d2r;b*=d2r;const sd=Math.sin(dNGP)*Math.sin(b)+Math.cos(dNGP)*Math.cos(b)*Math.cos(lNCP-l);const dec=Math.asin(sd);const y=Math.cos(b)*Math.sin(lNCP-l);const x=Math.cos(dNGP)*Math.sin(b)-Math.sin(dNGP)*Math.cos(b)*Math.cos(lNCP-l);let ra=aNGP+Math.atan2(y,x);ra=(ra*r2d%360+360)%360;return[ra/15,dec*r2d]}let seed=20260601;const rnd=()=>{seed=seed*1103515245+12345&2147483647;return seed/2147483647};const arr=[];
+function buildStarField(){return[{ra:0,de:0,mag:99,gaiaGridSentinel:true}];/*
+  Technischer Wächter für den bestehenden zellenweisen Zeichenweg. Er ist mit
+  99 mag stets unsichtbar und enthält keinen erzeugten Stern. Das eigentliche
+  Hintergrundfeld stammt ausschließlich aus Gaia DR3. */const arr=[];
   /* Helles Feld von 3,5 bis 6,5 mag nach dem klassischen Zählgesetz.
      log N = 0,5029·m + 0,6902 trifft die Standardsummen: 158 bis 3,0 mag,
      503 bis 4,0, 1.570 bis 5,0, 5.101 bis 6,0 und 9.096 bis 6,5. Die
@@ -681,7 +686,7 @@ function _tierStep(){
     try{if(typeof draw==="function"&&W)draw()}catch(e){}
   }else requestAnimationFrame(_tierStep);
 }
-function loadStarTier(){return _tierStart()}
+function loadStarTier(){return false/* Keine synthetischen Sternstufen: Gaia wird nach Helligkeit gefiltert. */}
 window.loadStarTier=loadStarTier;
 /* Sterne nur im Sichtfeld nachladen, zellenweise und verzoegert */
 const _DEEP=[];
@@ -1218,7 +1223,7 @@ function decCircle(decDeg){g.beginPath();let prev=null,started=false;const step=
    wahre Winkelabstand, der Test also stets auf der sicheren Seite. Bei kleiner
    Vergrößerung wird er abgeschaltet, weil dann ohnehin fast alles sichtbar ist. */
 let _cullX=0,_cullY=0,_cullZ=0,_cullCos=-2;{let _cAlt,_cAz,_angR;
-  if(_rm){_cAz=camAz*Math.PI/180;_cAlt=camAlt*Math.PI/180;_angR=Math.atan(Math.hypot((cvW||W),(cvH||W))/2/_rf2)+.03;}
+  if(_rm){_cAz=camAz*Math.PI/180;_cAlt=camAlt*Math.PI/180;/* Stereografisch gilt r=f·tan(θ/2). Der frühere fehlende Faktor 2 halbierte den Sichtkegel und ließ Gaia-Sterne am Bildrand erst nach einem Schwenk erscheinen. */_angR=2*Math.atan(Math.hypot((cvW||W),(cvH||W))/2/_rf2)+.03;}
   else{const _xc=(vx0+vx1)/2,_yc=(vy0+vy1)/2,_rc=Math.hypot(_xc,_yc);
     _cAz=(_rc>1e-9)?Math.atan2(_xc,_yc):0;_cAlt=Math.PI/2-_rc/twoOverPiR;
     _angR=Math.hypot(vx1-vx0,vy1-vy0)/2/twoOverPiR+.03;}
@@ -1727,7 +1732,7 @@ function scrollToSky(){sheetPage=0;const sc=document.getElementById("scroller"),
   const ig=document.getElementById("i-lng");if(ig)ig.value=c.lo.toFixed(2);
   const sa=document.getElementById("sLat");if(sa)sa.value=Math.max(-90,Math.min(90,Math.round(lat*10)/10));
   const sg=document.getElementById("sLng");if(sg)sg.value=Math.max(-180,Math.min(180,Math.round(lng*10)/10));
-  updateLocDisp(name===undefined?c.n:name,c.la,c.lo);updateTimezone();updLabels()}function selectCity(i){const c=CITIES[i];selCity=i;applyCity(c);setTimeout(()=>document.getElementById("loc-panel").classList.remove("open"),300)}function normalize(s){return s.toLowerCase().replace(/[äàá]/g,"a").replace(/[öòó]/g,"o").replace(/[üùú]/g,"u").replace(/ß/g,"ss").trim()}function searchPlaces(q){const nq=normalize(q);if(!nq)return[];const results=[];CITIES.forEach((c,i)=>{if(normalize(c.n).includes(nq))results.push({type:"city",c:c,i:i,score:normalize(c.n).startsWith(nq)?0:1})});const lands=[...new Set(CITIES.map(c=>c.land))];lands.forEach(land=>{if(normalize(land).includes(nq)){const cap=CITIES.find(c=>c.land===land&&c.cap)||CITIES.find(c=>c.land===land);if(cap&&!results.some(r=>r.c===cap))results.push({type:"country",c:cap,land:land,score:normalize(land).startsWith(nq)?0:2})}});results.sort((a,b)=>a.score-b.score||a.c.n.localeCompare(b.c.n));return results.slice(0,8)}let srSel=-1,srCurrent=[];/* Erkennt geografische Koordinaten in freier Schreibweise. */
+  updateLocDisp(name===undefined?c.n:name,c.la,c.lo);updateTimezone();updLabels();if(typeof window.applyAutomaticSkyQuality==="function")window.applyAutomaticSkyQuality(c.la,c.lo)}function selectCity(i){const c=CITIES[i];selCity=i;applyCity(c);setTimeout(()=>document.getElementById("loc-panel").classList.remove("open"),300)}function normalize(s){return s.toLowerCase().replace(/[äàá]/g,"a").replace(/[öòó]/g,"o").replace(/[üùú]/g,"u").replace(/ß/g,"ss").trim()}function searchPlaces(q){const nq=normalize(q);if(!nq)return[];const results=[];CITIES.forEach((c,i)=>{if(normalize(c.n).includes(nq))results.push({type:"city",c:c,i:i,score:normalize(c.n).startsWith(nq)?0:1})});const lands=[...new Set(CITIES.map(c=>c.land))];lands.forEach(land=>{if(normalize(land).includes(nq)){const cap=CITIES.find(c=>c.land===land&&c.cap)||CITIES.find(c=>c.land===land);if(cap&&!results.some(r=>r.c===cap))results.push({type:"country",c:cap,land:land,score:normalize(land).startsWith(nq)?0:2})}});results.sort((a,b)=>a.score-b.score||a.c.n.localeCompare(b.c.n));return results.slice(0,8)}let srSel=-1,srCurrent=[];/* Erkennt geografische Koordinaten in freier Schreibweise. */
 function parseKoord(roh){
   let t=String(roh==null?"":roh).trim();
   if(t.length<3)return null;
@@ -1885,7 +1890,7 @@ function applyManual(){
   const ig=document.getElementById("i-lng");if(ig)ig.value=lng.toFixed(1);
   const sa=document.getElementById("sLat");if(sa)sa.value=Math.round(lat*10)/10;
   const sg=document.getElementById("sLng");if(sg)sg.value=Math.round(lng*10)/10;
-  updateLocDisp(null,lat,lng);updateTimezone();updLabels();
+  updateLocDisp(null,lat,lng);updateTimezone();updLabels();if(typeof window.applyAutomaticSkyQuality==="function")window.applyAutomaticSkyQuality(lat,lng);
 }function updateLocDisp(name,la,lo){
   /* So viele Nachkommastellen wie nötig, höchstens drei – damit von Hand
      eingegebene Koordinaten nicht auf ein Zehntelgrad gerundet erscheinen. */

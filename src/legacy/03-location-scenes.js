@@ -12,6 +12,8 @@
   window.__useCurrentLocationForNextScene=false;
   function clampLat(v){return Math.max(-90,Math.min(90,+v||0));}
   function normLng(v){v=+v||0;while(v<-180)v+=360;while(v>180)v-=360;return v;}
+  window.getPlanetariumCities=()=>CITIES;
+  window.getPlanetariumMapLocation=()=>({lat:lat,lng:lng});
   function updateSlidersAndLocationLabel(label){
     const sl=document.getElementById('sLat'),sg=document.getElementById('sLng'),il=document.getElementById('i-lat'),ig=document.getElementById('i-lng');
     if(sl)sl.value=Math.round(lat);
@@ -23,6 +25,7 @@
   function setCurrentGeo(la,lo,label,source,applyNow){
     if(!isFinite(la)||!isFinite(lo))return;
     window.currentGeo={lat:clampLat(la),lng:normLng(lo),label:label||'Aktueller Standort',known:true,source:source||'gps'};
+    window.applyAutomaticSkyQuality?.(window.currentGeo.lat,window.currentGeo.lng);
     if(applyNow!==false && !window.didacticLocationOverride){
       lat=window.currentGeo.lat; lng=window.currentGeo.lng;
       updateSlidersAndLocationLabel(window.currentGeo.label);
@@ -35,6 +38,7 @@
   window.applyCurrentGeo=function(label){
     window.didacticLocationOverride=false;
     lat=window.currentGeo.lat; lng=window.currentGeo.lng;
+    window.applyAutomaticSkyQuality?.(lat,lng);
     updateSlidersAndLocationLabel(label||window.currentGeo.label||'Aktueller Standort');
     if(typeof updateTimezone==='function')updateTimezone();
     if(typeof updLabels==='function')updLabels();
@@ -69,6 +73,17 @@
       return r;
     };
     window.applyManual=applyManual;
+  }
+  if(typeof applyCity==='function'&&!window.__applyCityWrappedForSkyQuality){
+    const oldApplyCity=applyCity;
+    window.__applyCityWrappedForSkyQuality=true;
+    applyCity=function(c,name){
+      const r=oldApplyCity.apply(this,arguments);
+      setCurrentGeo(c.la,c.lo,name===undefined?c.n:name,'city',false);
+      window.didacticLocationOverride=false;
+      return r;
+    };
+    window.applyCity=applyCity;
   }
   if(typeof setScene==='function'&&!window.__setSceneWrappedForCurrentGeo){
     const oldSetScene=setScene;

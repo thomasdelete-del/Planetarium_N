@@ -231,7 +231,7 @@
   <div class="row"><label>🌍 Breite</label><input type="range" id="sLat" min="-90" max="90" step=".1" value="48" data-slider data-input-action="change-latitude"><span id="lLat">–</span></div>
   <div class="row"><label>🌐 Länge</label><input type="range" id="sLng" min="-180" max="180" step=".1" value="13" data-slider data-input-action="change-longitude"><span id="lLng">–</span></div>
   <div class="row"><label>⚡ Speed</label><input type="range" id="sSpd" min="0" max="1000" step="1" value="585" data-slider data-input-action="change-speed"><span id="lSpd">2.3min/s</span></div>
-  <div class="row"><label>🌌 Himmel</label><div style="display:flex;gap:.3rem;flex:1;flex-wrap:wrap"><button type="button" class="gear-btn" id="skyq-city" data-action="set-sky-quality" data-magnitude="4.5">Stadt 4,5<sup>m</sup></button><button type="button" class="gear-btn on" id="skyq-land" data-action="set-sky-quality" data-magnitude="5.5">Land 5,5<sup>m</sup></button><button type="button" class="gear-btn" id="skyq-dark" data-action="set-sky-quality" data-magnitude="6.5">dunkel 6,5<sup>m</sup></button><button type="button" class="gear-btn" id="gaia-btn" data-action="open-gaia-dialog" title="Echten Gaia-DR3-Sternkatalog laden oder Ladezustand anzeigen">✦ Gaia…</button></div></div>
+  <div class="row"><label>🌌 Himmel</label><div style="display:flex;gap:.3rem;flex:1;flex-wrap:wrap"><button type="button" class="gear-btn" id="skyq-city" data-action="set-sky-quality" data-magnitude="4.5">Stadt 4,5<sup>m</sup></button><button type="button" class="gear-btn on" id="skyq-land" data-action="set-sky-quality" data-magnitude="5.5">Land 5,5<sup>m</sup></button><button type="button" class="gear-btn" id="skyq-dark" data-action="set-sky-quality" data-magnitude="6.5">dunkel 6,5<sup>m</sup></button><button type="button" class="gear-btn" id="gaia-btn" data-action="open-gaia-dialog" title="Echten Gaia-DR3-Sternkatalog laden oder Ladezustand anzeigen">✦ Gaia…</button><small id="skyq-auto-status" style="flex-basis:100%;opacity:.78">Automatisch nach Standort · Näherung anhand der Ortsliste</small></div></div>
   <div class="row"><label>⏩ Gang</label><div style="display:flex;gap:.3rem;flex:1;flex-wrap:wrap"><button type="button" class="gear-btn" data-action="set-gear" data-gear="60">1 Min/s</button><button type="button" class="gear-btn" data-action="set-gear" data-gear="3600">1 Std/s</button><button type="button" class="gear-btn" data-action="set-gear" data-gear="86400">1 Tag/s</button><button type="button" class="gear-btn" data-action="set-gear" data-gear="year">1 Jahr/s</button></div></div>
   <div class="row"><label>🔤 Schrift</label><input type="range" id="sFont" min="60" max="180" step="5" value="100" data-slider data-input-action="change-font-scale"><span id="lFont">100%</span></div>
 </div>
@@ -448,18 +448,21 @@
 </div>
 <div id="info-pop"></div>
 <div id="map-modal">
-  <h3>📍 Standort auf Karte wählen</h3>
-  <canvas id="worldmap"></canvas>
-  <div id="map-hint">Tippe auf die Karte, um deinen Standort zu setzen</div>
-  <button id="map-close" data-action="close-map">✕ Schließen</button>
+  <div class="map-card">
+    <h3>📍 Standort auf der Weltkarte wählen</h3>
+    <canvas id="worldmap" aria-label="Weltkarte zur Standortauswahl"></canvas>
+    <div id="map-hint">Tippe auf die Karte, um den Standort zu setzen</div>
+    <div class="map-source">Küstenlinien: Natural Earth · gemeinfreie Geodaten</div>
+    <button id="map-close" data-action="close-map">✕ Schließen</button>
+  </div>
 </div>
-<script src="./src/legacy/01-core.js?v=2" defer></script>
+<script src="./src/legacy/01-core.js?v=7" defer></script>
 <script src="./src/legacy/00-scheduler.js" defer></script>
 
 
 <script src="./src/legacy/02-didactic-orbits.js" defer></script>
 
-<script src="./src/legacy/03-location-scenes.js" defer></script>
+<script src="./src/legacy/03-location-scenes.js?v=4" defer></script>
 
 <script src="./src/legacy/04-moon-rendering.js" defer></script>
 
@@ -499,6 +502,6 @@
 
 
 <script src="./src/legacy/14-didactic-focus.js?v=2" defer></script>
-<script type="module" src="./src/main.js?v=31"></script>
+<script type="module" src="./src/main.js?v=32"></script>
 </body>
 </html>
