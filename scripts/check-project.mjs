@@ -40,7 +40,10 @@ const compactExpectedSize = 32 + 4 * (compactGridCells + 1) + 10 * compactCount;
 if (compactGaia.toString("ascii", 0, 4) !== "GDR3" || compactGaia.readUInt32LE(4) !== 1) {
   throw new Error("Kompakter Gaia-Katalog besitzt keine unterstützte GDR3-Kennung.");
 }
-if (compactGaia.length !== compactExpectedSize || compactCount >= gaiaRecordCount) {
+const gaiaManifest = JSON.parse(fs.readFileSync(path.join(root, "gaia", "manifest.json"), "utf8"));
+const deepestGaiaStage = gaiaManifest.stages?.at(-1);
+if (compactGaia.length !== compactExpectedSize || !deepestGaiaStage
+    || compactCount !== deepestGaiaStage.count || compactGaia.length !== deepestGaiaStage.bytes) {
   throw new Error("Kompakter Gaia-Katalog ist inkonsistent oder nicht verdichtet.");
 }
 if ((html.match(/<script\b/g) || []).length !== 16) {

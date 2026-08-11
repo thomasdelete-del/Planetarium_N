@@ -4,7 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build:gaia": "node scripts/build-gaia-compact.mjs",
+    "download:gaia": "node scripts/download-gaia-dr3.mjs 12.3",
+    "build:gaia": "node scripts/build-gaia-compact.mjs && node scripts/build-gaia-tiles.mjs",
     "build:changelog": "node scripts/extract-changelog.mjs",
     "check": "node scripts/check-project.mjs",
     "test": "node --test",

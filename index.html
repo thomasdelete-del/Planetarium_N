@@ -148,7 +148,7 @@
   <button data-action="manual-orientation" data-azimuth="12" data-altitude="0" title="rechts">▶</button>
 </div>
 <div id="info-tr" class="corner-info"></div>
-<div id="info-br" class="corner-info" data-action="toggle-telescope" title="Teleskopmodus ein/aus"></div>
+<div id="info-br" class="corner-info" data-action="toggle-telescope" title="Teleskopansicht · Modell: 70 mm Öffnung, 7 mm Augenpupille"></div>
 <div id="info-bl" class="corner-info"></div>
 </section>
 <section id="page-panel" class="snap">
@@ -231,7 +231,7 @@
   <div class="row"><label>🌍 Breite</label><input type="range" id="sLat" min="-90" max="90" step=".1" value="48" data-slider data-input-action="change-latitude"><span id="lLat">–</span></div>
   <div class="row"><label>🌐 Länge</label><input type="range" id="sLng" min="-180" max="180" step=".1" value="13" data-slider data-input-action="change-longitude"><span id="lLng">–</span></div>
   <div class="row"><label>⚡ Speed</label><input type="range" id="sSpd" min="0" max="1000" step="1" value="585" data-slider data-input-action="change-speed"><span id="lSpd">2.3min/s</span></div>
-  <div class="row"><label>🌌 Himmel</label><div style="display:flex;gap:.3rem;flex:1;flex-wrap:wrap"><button type="button" class="gear-btn" id="skyq-city" data-action="set-sky-quality" data-magnitude="4.5">Stadt 4,5<sup>m</sup></button><button type="button" class="gear-btn on" id="skyq-land" data-action="set-sky-quality" data-magnitude="5.5">Land 5,5<sup>m</sup></button><button type="button" class="gear-btn" id="skyq-dark" data-action="set-sky-quality" data-magnitude="6.5">dunkel 6,5<sup>m</sup></button><button type="button" class="gear-btn" id="gaia-btn" data-action="open-gaia-dialog" title="Echten Gaia-DR3-Sternkatalog laden oder Ladezustand anzeigen">✦ Gaia…</button><small id="skyq-auto-status" style="flex-basis:100%;opacity:.78">Automatisch nach Standort · Näherung anhand der Ortsliste</small></div></div>
+  <div class="row"><label>🌌 Himmel</label><div style="display:flex;gap:.3rem;flex:1;flex-wrap:wrap"><button type="button" class="gear-btn" id="skyq-city" data-action="set-sky-quality" data-magnitude="4.5">Stadt 4,5<sup>m</sup></button><button type="button" class="gear-btn on" id="skyq-land" data-action="set-sky-quality" data-magnitude="5.5">Land 5,5<sup>m</sup></button><button type="button" class="gear-btn" id="skyq-dark" data-action="set-sky-quality" data-magnitude="6.5" title="Keine Lichtverschmutzungs- oder Grenzgrößenbegrenzung">dunkel · unbegrenzt</button><button type="button" class="gear-btn" id="gaia-btn" data-action="open-gaia-dialog" title="Echten Gaia-DR3-Sternkatalog laden oder Ladezustand anzeigen">✦ Gaia…</button><small id="skyq-auto-status" style="flex-basis:100%;opacity:.78">Automatisch nach Standort · Näherung anhand der Ortsliste</small></div></div>
   <div class="row"><label>⏩ Gang</label><div style="display:flex;gap:.3rem;flex:1;flex-wrap:wrap"><button type="button" class="gear-btn" data-action="set-gear" data-gear="60">1 Min/s</button><button type="button" class="gear-btn" data-action="set-gear" data-gear="3600">1 Std/s</button><button type="button" class="gear-btn" data-action="set-gear" data-gear="86400">1 Tag/s</button><button type="button" class="gear-btn" data-action="set-gear" data-gear="year">1 Jahr/s</button></div></div>
   <div class="row"><label>🔤 Schrift</label><input type="range" id="sFont" min="60" max="180" step="5" value="100" data-slider data-input-action="change-font-scale"><span id="lFont">100%</span></div>
 </div>
@@ -283,7 +283,7 @@
       <h2>1 · Navigation</h2>
       <div class="ag-row"><b>Himmel bleibt Startseite:</b> Beim Öffnen springt die App direkt zur Himmelsansicht. Die didaktische Seite liegt darüber und ist durch Hochscrollen erreichbar.</div>
       <div class="ag-row"><b>Scrollen:</b> Frei zwischen Didaktik, Himmel, Bedienfeld, Legende und Anleitung scrollen. Es gibt kein hartes Einrasten.</div>
-      <div class="ag-row"><b>Zoom:</b> Mit zwei Fingern oder Mausrad hineinzoomen. Bei Gesamtansicht verschiebt ein Finger den Himmel nicht; nach Zoom kann der Ausschnitt mit einem Finger verschoben werden.</div>
+      <div class="ag-row"><b>Zoom / Teleskop:</b> Mit zwei Fingern oder Mausrad hineinzoomen. Das Sternmodell entspricht einem kompakten Teleskop mit 70&nbsp;mm Öffnung und einer dunkeladaptierten Augenpupille von 7&nbsp;mm: Mit wachsender Vergrößerung werden sukzessive schwächere echte Gaia-Sterne sichtbar. Bei Gesamtansicht verschiebt ein Finger den Himmel nicht; nach Zoom kann der Ausschnitt mit einem Finger verschoben werden.</div>
   <div class="ag-row"><b>Innerhalb / außerhalb des Horizonts:</b> Nur innerhalb des Horizontkreises wirkt eine Fingerbewegung als Verschieben oder Vergrößern des Himmels. In den Ecken der Zeichenfläche außerhalb des Kreises wird stattdessen ganz normal weitergescrollt — auch bei starker Vergrößerung oder im Vollbild.</div>
       <div class="ag-row"><b>Tippen:</b> Ein Himmelskörper zeigt Detailinformationen. Langes Drücken wählt das nächstgelegene Objekt. Am Rechner lässt sich in der Normalansicht die Zeit mit gedrückter Maustaste ziehen: waagrecht verschiebt den Tag, senkrecht die Uhrzeit.</div>
   <div class="ag-row"><b>Beobachtermodus:</b> Der Himmel wird stereographisch abgebildet — winkeltreu, sodass Sternbilder ihre Form behalten und auch der Zenit sauber dargestellt wird. Ziehen schwenkt den Blick, das Mausrad oder die Zwei-Finger-Geste ändert das Sichtfeld, „Jetzt" führt zur Himmelsansicht zurück. Beim Programmstart ist er automatisch aktiv.</div>
@@ -456,7 +456,7 @@
     <button id="map-close" data-action="close-map">✕ Schließen</button>
   </div>
 </div>
-<script src="./src/legacy/01-core.js?v=7" defer></script>
+<script src="./src/legacy/01-core.js?v=28" defer></script>
 <script src="./src/legacy/00-scheduler.js" defer></script>
 
 

@@ -4,16 +4,22 @@ export const GAIA_MAG_STEP = 1 / 16;
 const COLOR_MIN = -1;
 const COLOR_SPAN = 6;
 
-export function compactGaiaCatalog(buffer, gridRa, gridDec, namedStars = []) {
+export function compactGaiaCatalog(buffer, gridRa, gridDec, namedStars = [], options = {}) {
   const view = new DataView(buffer);
   const signature = String.fromCharCode(
     view.getUint8(0), view.getUint8(1), view.getUint8(2), view.getUint8(3)
   );
   if (signature !== "GDR3") throw new Error("keine GDR3-Datei");
 
-  const count = view.getUint32(8, true);
-  if (16 + count * 36 !== buffer.byteLength) {
-    throw new Error(`Länge passt nicht zu ${count} Sätzen`);
+  const sourceCount = view.getUint32(8, true);
+  const maxMagnitude = Number.isFinite(options.maxMagnitude) ? options.maxMagnitude : Infinity;
+  let count = 0;
+  if (16 + sourceCount * 36 !== buffer.byteLength) {
+    throw new Error(`Länge passt nicht zu ${sourceCount} Sätzen`);
+  }
+
+  for (let index = 0; index < sourceCount; index += 1) {
+    if (view.getFloat32(16 + index * 36 + 24, true) <= maxMagnitude) count += 1;
   }
 
   const cellCount = gridRa * gridDec;
@@ -24,7 +30,8 @@ export function compactGaiaCatalog(buffer, gridRa, gridDec, namedStars = []) {
   const declinations = new Int32Array(count);
   const colors = new Uint8Array(count);
 
-  for (let index = 0; index < count; index += 1) {
+  let selectedIndex = 0;
+  for (let index = 0; index < sourceCount; index += 1) {
     const offset = 16 + index * 36;
     const ra = view.getFloat64(offset + 8, true);
     const dec = view.getFloat64(offset + 16, true);
@@ -36,15 +43,17 @@ export function compactGaiaCatalog(buffer, gridRa, gridDec, namedStars = []) {
     let decCell = Math.floor((dec + 90) / 180 * gridDec);
     decCell = Math.max(0, Math.min(gridDec - 1, decCell));
     const cell = decCell * gridRa + raCell;
-    cells[index] = cell;
+    if (g > maxMagnitude) continue;
+    const target = selectedIndex++;
+    cells[target] = cell;
     counts[cell] += 1;
-    rightAscensions[index] = ((((ra % 360) + 360) % 360) / 360 * 4294967296) >>> 0;
-    declinations[index] = Math.max(-2147483648, Math.min(2147483647, Math.round(dec / 90 * 2147483648)));
+    rightAscensions[target] = ((((ra % 360) + 360) % 360) / 360 * 4294967296) >>> 0;
+    declinations[target] = Math.max(-2147483648, Math.min(2147483647, Math.round(dec / 90 * 2147483648)));
     const color = bp > 0 && rp > 0 ? bp - rp : 0.8;
     const correctedColor = Math.max(-0.5, Math.min(5, color));
     const visualMagnitude = g + 0.0176 + 0.00686 * correctedColor + 0.1732 * correctedColor ** 2;
-    magnitudes[index] = Math.max(0, Math.min(254, Math.round((visualMagnitude - GAIA_MAG_MIN) / GAIA_MAG_STEP)));
-    colors[index] = Math.max(0, Math.min(255,
+    magnitudes[target] = Math.max(0, Math.min(254, Math.round((visualMagnitude - GAIA_MAG_MIN) / GAIA_MAG_STEP)));
+    colors[target] = Math.max(0, Math.min(255,
       Math.round((Math.max(COLOR_MIN, Math.min(COLOR_MIN + COLOR_SPAN, color)) - COLOR_MIN) / COLOR_SPAN * 255)
     ));
   }

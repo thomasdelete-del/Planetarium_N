@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { compactGaiaCatalog } from "../src/gaia/compact.js";
 
 function rawCatalog(stars) {
@@ -35,4 +36,21 @@ test("Gaia-Rohdaten werden sortiert, verdichtet und dedupliziert", () => {
 
 test("Ungültige Gaia-Dateien werden abgewiesen", () => {
   assert.throws(() => compactGaiaCatalog(new ArrayBuffer(32), 48, 24), /GDR3/);
+});
+
+test("Kumulative Magnitudenstufen enthalten nur Sterne bis zur Stufengrenze", () => {
+  const input = rawCatalog([
+    { ra: 10, dec: 0, g: 6, bp: 6.5, rp: 5.8 },
+    { ra: 20, dec: 5, g: 8, bp: 8.5, rp: 7.8 },
+    { ra: 30, dec: 10, g: 10, bp: 10.5, rp: 9.8 }
+  ]);
+  assert.equal(compactGaiaCatalog(input, 48, 24, [], { maxMagnitude: 6.5 }).count, 1);
+  assert.equal(compactGaiaCatalog(input, 48, 24, [], { maxMagnitude: 8 }).count, 2);
+  assert.equal(compactGaiaCatalog(input, 48, 24, [], { maxMagnitude: 10 }).count, 3);
+});
+
+test("Teleskopstufen werden oberhalb 10 mag fein abgestuft", () => {
+  const buildScript = readFileSync(new URL("../scripts/build-gaia-compact.mjs", import.meta.url), "utf8");
+  assert.match(buildScript, /\[6\.5, 8, 10, 10\.5, 11, 11\.5\]/);
+  assert.doesNotMatch(buildScript, /\[6\.5, 8, 10, 12\.3\]/);
 });
