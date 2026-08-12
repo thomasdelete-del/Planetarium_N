@@ -1,11 +1,13 @@
 {
   "name": "planetarium",
-  "version": "11.0.0",
+  "version": "11.12.0",
   "private": true,
   "type": "module",
   "scripts": {
     "download:gaia": "node scripts/download-gaia-dr3.mjs 12.3",
-    "build:gaia": "node scripts/build-gaia-compact.mjs && node scripts/build-gaia-tiles.mjs",
+    "build:gaia": "node scripts/build-gaia-compact.mjs && node scripts/build-gaia-tiles.mjs && node scripts/build-gaia-density.mjs && node scripts/build-gaia-3d.mjs",
+    "build:gaiadensity": "node scripts/build-gaia-density.mjs",
+    "build:gaia3d": "node scripts/build-gaia-3d.mjs",
     "build:changelog": "node scripts/extract-changelog.mjs",
     "check": "node scripts/check-project.mjs",
     "test": "node --test",

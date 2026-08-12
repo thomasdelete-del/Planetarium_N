@@ -1,24 +1,24 @@
 {
-  "version": 5,
+  "version": 8,
   "strategy": "cumulative",
   "stages": [
     {
       "magnitude": 6.5,
       "file": "gaia/gaia_6_5.bin",
-      "count": 12828,
-      "bytes": 132924
+      "count": 11892,
+      "bytes": 123564
     },
     {
       "magnitude": 8,
       "file": "gaia/gaia_8.bin",
-      "count": 66889,
-      "bytes": 673534
+      "count": 62494,
+      "bytes": 629584
     },
     {
       "magnitude": 10,
       "file": "gaia/gaia_10.bin",
-      "count": 512533,
-      "bytes": 5129974
+      "count": 481865,
+      "bytes": 4823294
     }
   ],
   "streaming": {
@@ -117,15 +117,15 @@
             "x": 0,
             "y": 1,
             "file": "gaia/tiles/g10_5-1-0.bin",
-            "count": 4338,
-            "bytes": 65376
+            "count": 2169,
+            "bytes": 35010
           },
           {
             "x": 1,
             "y": 1,
             "file": "gaia/tiles/g10_5-1-1.bin",
-            "count": 2715,
-            "bytes": 42654
+            "count": 2406,
+            "bytes": 38328
           },
           {
             "x": 2,
@@ -201,15 +201,15 @@
             "x": 0,
             "y": 2,
             "file": "gaia/tiles/g10_5-2-0.bin",
-            "count": 5552,
-            "bytes": 82372
+            "count": 2776,
+            "bytes": 43508
           },
           {
             "x": 1,
             "y": 2,
             "file": "gaia/tiles/g10_5-2-1.bin",
-            "count": 3569,
-            "bytes": 54610
+            "count": 3199,
+            "bytes": 49430
           },
           {
             "x": 2,
@@ -285,15 +285,15 @@
             "x": 0,
             "y": 3,
             "file": "gaia/tiles/g10_5-3-0.bin",
-            "count": 7710,
-            "bytes": 112584
+            "count": 3855,
+            "bytes": 58614
           },
           {
             "x": 1,
             "y": 3,
             "file": "gaia/tiles/g10_5-3-1.bin",
-            "count": 4861,
-            "bytes": 72698
+            "count": 4349,
+            "bytes": 65530
           },
           {
             "x": 2,
@@ -369,15 +369,15 @@
             "x": 0,
             "y": 4,
             "file": "gaia/tiles/g10_5-4-0.bin",
-            "count": 15900,
-            "bytes": 227244
+            "count": 7950,
+            "bytes": 115944
           },
           {
             "x": 1,
             "y": 4,
             "file": "gaia/tiles/g10_5-4-1.bin",
-            "count": 8727,
-            "bytes": 126822
+            "count": 7605,
+            "bytes": 111114
           },
           {
             "x": 2,
@@ -453,15 +453,15 @@
             "x": 0,
             "y": 5,
             "file": "gaia/tiles/g10_5-5-0.bin",
-            "count": 6458,
-            "bytes": 95056
+            "count": 3229,
+            "bytes": 49850
           },
           {
             "x": 1,
             "y": 5,
             "file": "gaia/tiles/g10_5-5-1.bin",
-            "count": 3014,
-            "bytes": 46840
+            "count": 2649,
+            "bytes": 41730
           },
           {
             "x": 2,
@@ -626,15 +626,15 @@
             "x": 0,
             "y": 1,
             "file": "gaia/tiles/g11-1-0.bin",
-            "count": 9580,
-            "bytes": 138764
+            "count": 4790,
+            "bytes": 71704
           },
           {
             "x": 1,
             "y": 1,
             "file": "gaia/tiles/g11-1-1.bin",
-            "count": 5847,
-            "bytes": 86502
+            "count": 5187,
+            "bytes": 77262
           },
           {
             "x": 2,
@@ -710,15 +710,15 @@
             "x": 0,
             "y": 2,
             "file": "gaia/tiles/g11-2-0.bin",
-            "count": 11832,
-            "bytes": 170292
+            "count": 5916,
+            "bytes": 87468
           },
           {
             "x": 1,
             "y": 2,
             "file": "gaia/tiles/g11-2-1.bin",
-            "count": 7774,
-            "bytes": 113480
+            "count": 6939,
+            "bytes": 101790
           },
           {
             "x": 2,
@@ -794,15 +794,15 @@
             "x": 0,
             "y": 3,
             "file": "gaia/tiles/g11-3-0.bin",
-            "count": 16281,
-            "bytes": 232578
+            "count": 8140,
+            "bytes": 118604
           },
           {
             "x": 1,
             "y": 3,
             "file": "gaia/tiles/g11-3-1.bin",
-            "count": 10093,
-            "bytes": 145946
+            "count": 8988,
+            "bytes": 130476
           },
           {
             "x": 2,
@@ -878,15 +878,15 @@
             "x": 0,
             "y": 4,
             "file": "gaia/tiles/g11-4-0.bin",
-            "count": 34318,
-            "bytes": 485096
+            "count": 17159,
+            "bytes": 244870
           },
           {
             "x": 1,
             "y": 4,
             "file": "gaia/tiles/g11-4-1.bin",
-            "count": 18939,
-            "bytes": 269790
+            "count": 16470,
+            "bytes": 235224
           },
           {
             "x": 2,
@@ -962,15 +962,15 @@
             "x": 0,
             "y": 5,
             "file": "gaia/tiles/g11-5-0.bin",
-            "count": 13828,
-            "bytes": 198236
+            "count": 6914,
+            "bytes": 101440
           },
           {
             "x": 1,
             "y": 5,
             "file": "gaia/tiles/g11-5-1.bin",
-            "count": 6421,
-            "bytes": 94538
+            "count": 5607,
+            "bytes": 83142
           },
           {
             "x": 2,
@@ -1135,15 +1135,15 @@
             "x": 0,
             "y": 1,
             "file": "gaia/tiles/g11_5-1-0.bin",
-            "count": 17348,
-            "bytes": 247516
+            "count": 8674,
+            "bytes": 126080
           },
           {
             "x": 1,
             "y": 1,
             "file": "gaia/tiles/g11_5-1-1.bin",
-            "count": 10524,
-            "bytes": 151980
+            "count": 9368,
+            "bytes": 135796
           },
           {
             "x": 2,
@@ -1219,15 +1219,15 @@
             "x": 0,
             "y": 2,
             "file": "gaia/tiles/g11_5-2-0.bin",
-            "count": 21260,
-            "bytes": 302284
+            "count": 10630,
+            "bytes": 153464
           },
           {
             "x": 1,
             "y": 2,
             "file": "gaia/tiles/g11_5-2-1.bin",
-            "count": 14042,
-            "bytes": 201232
+            "count": 12537,
+            "bytes": 180162
           },
           {
             "x": 2,
@@ -1303,15 +1303,15 @@
             "x": 0,
             "y": 3,
             "file": "gaia/tiles/g11_5-3-0.bin",
-            "count": 29021,
-            "bytes": 410938
+            "count": 14510,
+            "bytes": 207784
           },
           {
             "x": 1,
             "y": 3,
             "file": "gaia/tiles/g11_5-3-1.bin",
-            "count": 17557,
-            "bytes": 250442
+            "count": 15623,
+            "bytes": 223366
           },
           {
             "x": 2,
@@ -1387,15 +1387,15 @@
             "x": 0,
             "y": 4,
             "file": "gaia/tiles/g11_5-4-0.bin",
-            "count": 61435,
-            "bytes": 864734
+            "count": 30717,
+            "bytes": 434682
           },
           {
             "x": 1,
             "y": 4,
             "file": "gaia/tiles/g11_5-4-1.bin",
-            "count": 34299,
-            "bytes": 484830
+            "count": 29794,
+            "bytes": 421760
           },
           {
             "x": 2,
@@ -1471,15 +1471,15 @@
             "x": 0,
             "y": 5,
             "file": "gaia/tiles/g11_5-5-0.bin",
-            "count": 24920,
-            "bytes": 353524
+            "count": 12460,
+            "bytes": 179084
           },
           {
             "x": 1,
             "y": 5,
             "file": "gaia/tiles/g11_5-5-1.bin",
-            "count": 11206,
-            "bytes": 161528
+            "count": 9801,
+            "bytes": 141858
           },
           {
             "x": 2,
@@ -1554,5 +1554,25 @@
         ]
       }
     ]
+  },
+  "spatial3d": {
+    "file": "gaia/gaia_3d.bin",
+    "format": "G3V2",
+    "recordSize": 16,
+    "count": 3936857,
+    "bytes": 62994356,
+    "minimumParallaxSnr": 5,
+    "maximumDistancePc": 20000
+  },
+  "density": {
+    "file": "gaia/gaia_density.bin",
+    "format": "GSMP3",
+    "count": 116582,
+    "stride": 32,
+    "gridRa": 48,
+    "gridDec": 24,
+    "magnitudeMin": 9.5,
+    "magnitudeMax": 12.3,
+    "cellWeight": "galactic-density-u8"
   }
 }

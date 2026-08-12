@@ -11,15 +11,17 @@ export function compactGaiaCatalog(buffer, gridRa, gridDec, namedStars = [], opt
   );
   if (signature !== "GDR3") throw new Error("keine GDR3-Datei");
 
+  const version = view.getUint32(4, true);
+  const recordSize = version >= 2 ? 44 : 36;
   const sourceCount = view.getUint32(8, true);
   const maxMagnitude = Number.isFinite(options.maxMagnitude) ? options.maxMagnitude : Infinity;
   let count = 0;
-  if (16 + sourceCount * 36 !== buffer.byteLength) {
+  if (16 + sourceCount * recordSize !== buffer.byteLength) {
     throw new Error(`Länge passt nicht zu ${sourceCount} Sätzen`);
   }
 
   for (let index = 0; index < sourceCount; index += 1) {
-    if (view.getFloat32(16 + index * 36 + 24, true) <= maxMagnitude) count += 1;
+    if (view.getFloat32(16 + index * recordSize + 24, true) <= maxMagnitude) count += 1;
   }
 
   const cellCount = gridRa * gridDec;
@@ -32,7 +34,7 @@ export function compactGaiaCatalog(buffer, gridRa, gridDec, namedStars = [], opt
 
   let selectedIndex = 0;
   for (let index = 0; index < sourceCount; index += 1) {
-    const offset = 16 + index * 36;
+    const offset = 16 + index * recordSize;
     const ra = view.getFloat64(offset + 8, true);
     const dec = view.getFloat64(offset + 16, true);
     const g = view.getFloat32(offset + 24, true);

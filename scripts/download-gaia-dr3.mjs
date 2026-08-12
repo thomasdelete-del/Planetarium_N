@@ -11,7 +11,9 @@ const declinationHeight = 30;
 const raTileCount = 360 / tileWidth;
 const declinationTileCount = 180 / declinationHeight;
 const tileCount = raTileCount * declinationTileCount;
-const recordSize = 36;
+/* GDR3 v2: bisherige Photometrie plus Parallaxe und Standardfehler.
+   Ungueltige oder nicht vorhandene Astrometrie wird als NaN gespeichert. */
+const recordSize = 44;
 const headerSize = 16;
 
 if (!Number.isFinite(magnitude) || magnitude < 3 || magnitude > 13) {
@@ -30,10 +32,12 @@ function parseCsv(text) {
     const rows = [];
     for (const match of text.matchAll(/<TR>([\s\S]*?)<\/TR>/gi)) {
       const values = [...match[1].matchAll(/<TD>([\s\S]*?)<\/TD>/gi)].map(cell => decode(cell[1]));
-      if (values.length < 6) continue;
+      if (values.length < 8) continue;
       const row = {
         sourceId: values[0], ra: Number(values[1]), dec: Number(values[2]), g: Number(values[3]),
-        bp: Number(values[4]) || 0, rp: Number(values[5]) || 0
+        bp: Number(values[4]) || 0, rp: Number(values[5]) || 0,
+        parallax: values[6] === "" ? NaN : Number(values[6]),
+        parallaxError: values[7] === "" ? NaN : Number(values[7])
       };
       if (row.sourceId && Number.isFinite(row.ra + row.dec + row.g)) rows.push(row);
     }
@@ -53,7 +57,9 @@ function parseCsv(text) {
       dec: Number(values[column.dec]),
       g: Number(values[column.phot_g_mean_mag]),
       bp: Number(values[column.phot_bp_mean_mag]) || 0,
-      rp: Number(values[column.phot_rp_mean_mag]) || 0
+      rp: Number(values[column.phot_rp_mean_mag]) || 0,
+      parallax: values[column.parallax] === "" ? NaN : Number(values[column.parallax]),
+      parallaxError: values[column.parallax_error] === "" ? NaN : Number(values[column.parallax_error])
     };
   }).filter(row => row.sourceId && Number.isFinite(row.ra + row.dec + row.g));
 }
@@ -65,7 +71,7 @@ async function downloadTile(index) {
   const maximumRa = minimumRa + tileWidth;
   const minimumDeclination = -90 + declinationIndex * declinationHeight;
   const maximumDeclination = minimumDeclination + declinationHeight;
-  const query = `SELECT source_id,ra,dec,phot_g_mean_mag,phot_bp_mean_mag,phot_rp_mean_mag `
+  const query = `SELECT source_id,ra,dec,phot_g_mean_mag,phot_bp_mean_mag,phot_rp_mean_mag,parallax,parallax_error `
     + `FROM gaiadr3.gaia_source WHERE phot_g_mean_mag<=${magnitude.toFixed(4)} `
     + `AND ra>=${minimumRa.toFixed(4)} AND ra<${maximumRa.toFixed(4)} `
     + `AND dec>=${minimumDeclination.toFixed(4)} AND dec<${maximumDeclination.toFixed(4)}`;
@@ -87,7 +93,8 @@ async function downloadTile(index) {
 }
 
 async function fetchAndCache(index) {
-  const tilePath = path.join(cacheDirectory, `g${String(magnitude).replace(".", "_")}-${String(index).padStart(3, "0")}.json`);
+  /* Eigener Cache-Schluessel: alte Kacheln enthalten keine Parallaxen. */
+  const tilePath = path.join(cacheDirectory, `g${String(magnitude).replace(".", "_")}p-${String(index).padStart(3, "0")}.json`);
   if (!fs.existsSync(tilePath)) {
     const rows = await downloadTile(index);
     fs.writeFileSync(tilePath, JSON.stringify(rows));
@@ -108,7 +115,7 @@ await Promise.all(Array.from({ length: 6 }, () => worker()));
 const tiles = [];
 let count = 0;
 for (let index = 0; index < tileCount; index += 1) {
-  const tilePath = path.join(cacheDirectory, `g${String(magnitude).replace(".", "_")}-${String(index).padStart(3, "0")}.json`);
+  const tilePath = path.join(cacheDirectory, `g${String(magnitude).replace(".", "_")}p-${String(index).padStart(3, "0")}.json`);
   const rows = JSON.parse(fs.readFileSync(tilePath, "utf8"));
   tiles.push(rows); count += rows.length;
 }
@@ -116,7 +123,7 @@ for (let index = 0; index < tileCount; index += 1) {
 const output = new ArrayBuffer(headerSize + count * recordSize);
 const view = new DataView(output);
 new Uint8Array(output, 0, 4).set([71, 68, 82, 51]);
-view.setUint32(4, 1, true);
+view.setUint32(4, 2, true);
 view.setBigUint64(8, BigInt(count), true);
 let offset = headerSize;
 for (const rows of tiles) for (const row of rows) {
@@ -126,6 +133,8 @@ for (const rows of tiles) for (const row of rows) {
   view.setFloat32(offset + 24, row.g, true);
   view.setFloat32(offset + 28, row.bp, true);
   view.setFloat32(offset + 32, row.rp, true);
+  view.setFloat32(offset + 36, Number.isFinite(row.parallax) ? row.parallax : NaN, true);
+  view.setFloat32(offset + 40, Number.isFinite(row.parallaxError) ? row.parallaxError : NaN, true);
   offset += recordSize;
 }
 fs.writeFileSync(outputPath, new Uint8Array(output));
