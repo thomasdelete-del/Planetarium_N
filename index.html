@@ -4,17 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>Planetarium · Version 11</title>
-<script>
-window.addEventListener("error",event=>{document.documentElement.dataset.bootError=event.message||"Skriptfehler"});
-window.addEventListener("unhandledrejection",event=>{document.documentElement.dataset.bootError=String(event.reason&&event.reason.message||event.reason||"Promise-Fehler")});
-/* Gaia-Katalog, ES-Module, Worker und Kamera benötigen einen Web-Ursprung.
-   Wird die Entwicklungsdatei versehentlich direkt geöffnet, führt sie deshalb
-   zur bereits laufenden lokalen Vorschau statt einen leeren Himmel anzuzeigen. */
-if(location.protocol==="file:"){
-  const target="http://127.0.0.1:4173/";
-  try{location.replace(target)}catch(_){location.href=target}
-}
-</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link id="web-fonts" rel="stylesheet" media="print" data-deferred-stylesheet href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Cinzel:wght@400;600&family=Crimson+Pro:ital,wght@0,300;1,300&display=swap">
@@ -24,7 +13,7 @@ if(location.protocol==="file:"){
 <div id="scroller">
 <section id="page-jumps" class="snap">
   <div class="jump-shell">
-    <div class="jump-title"><span class="title-main">Planetarium</span><span class="title-build">Version 11.12 · Build 20260813a · freigegeben</span></div>
+    <div class="jump-title"><span class="title-main">Planetarium</span><span class="title-build">Version 11.10 · Build 20260809s · Stand: 09.08.2026</span></div>
     <div class="jump-sub">Didaktische Sprünge, Simulationen und Sternbild-Lernmodus. Jeder Schalter setzt Ort, Datum und Uhrzeit astronomisch plausibel und springt direkt zur Sternkarte.</div>
     <button class="jump-home" data-scene-id="current">🏠 Aktueller Himmel ▾</button>
 
@@ -61,7 +50,7 @@ if(location.protocol==="file:"){
         <button class="jump-btn" data-scene-id="lunar-eclipse"><b>Nächste Mondfinsternis</b><span>Suche ab dem heutigen Datum; weitere folgen über den Schalter erneut.</span></button>
         <button class="jump-btn" data-scene-id="solar-eclipse-prev"><b>Vorherige Sonnenfinsternis</b><span>Rückwärtssuche.</span></button>
         <button class="jump-btn" data-scene-id="lunar-eclipse-prev"><b>Vorherige Mondfinsternis</b><span>Rückwärtssuche.</span></button>
-        <button class="jump-btn warn" id="eclipse-europe-next" data-scene-id="eclipse-2026-spain"><b>Nächste Sonnenfinsternis wird berechnet …</b><span>Das Ergebnis wird beim Start vorausberechnet und bereits vor dem Anklicken als „Nächste Sonnenfinsternis in Stadt, Land“ angezeigt.</span></button>
+        <button class="jump-btn warn" data-scene-id="eclipse-2026-spain"><b>Sonnenfinsternis 12.08.2026 · Spanien</b><span>Palencia-Region, kurz vor Sonnenuntergang.</span></button>
       </div>
     </div>
 
@@ -138,7 +127,7 @@ if(location.protocol==="file:"){
   </div>
 </section>
 <section id="page-sky" class="snap">
-<header><h1>Planetarium</h1><p>Version 11.12 · Build 20260813a · freigegeben</p><div id="verinfo">Version 11.12 · Build 20260813a · freigegeben</div></header>
+<header><h1>Planetarium</h1><p>Version 11.10 · Build 20260809s · Stand: 09.08.2026</p><div id="verinfo">Version 11.10 · Build 20260809s · Stand: 09.08.2026</div></header>
 <div id="readout">–</div>
 <div id="year-bar">
   <button class="yb-btn" id="yb-back" title="1 Jahr zurück · halten: 10, dann 100 Jahre">◂</button>
@@ -165,21 +154,18 @@ if(location.protocol==="file:"){
 <section id="page-panel" class="snap">
 <div id="panel-bar" data-action="scroll-to-sky"><span class="lg-title">🎛 Planetarium</span><button id="panel-close" data-action="scroll-to-sky" title="zurück zum Himmel">✕</button></div>
 <div id="panel-body">
-<div class="panel-sub">Simulierter Sternenhimmel · Tippen · Zoom · Karte<br>Version 11.12 · Build 20260813a · freigegeben</div>
+<div class="panel-sub">Simulierter Sternenhimmel · Tippen · Zoom · Karte<br>Version 11.10 · Build 20260809s · Stand: 09.08.2026</div>
 <div class="ctrls">
   <button class="btn on" id="ba" data-action="toggle-animation">⏸ Pause</button>
   <button class="btn" data-action="set-now">Jetzt</button>
-  <button class="btn on" id="bn" data-action="toggle-names" aria-pressed="true" title="Namen von Sternen, Planeten, Sonne und Mond">✦ Objektnamen</button>
-  <button class="btn on" id="bconstnames" data-action="toggle-constellation-names" aria-pressed="true" title="Namen der Sternbilder ein-/ausblenden">✧ Sternbildnamen</button>
+  <button class="btn on" id="bn" data-action="toggle-names">✦ Namen</button>
   <button class="btn" id="balt" data-action="toggle-altitude-grid">∠ Höhe</button>
   <button class="btn" id="bra" data-action="toggle-ra-grid">♈ RA</button>
   <button class="btn on" id="blines" data-action="toggle-constellation-lines" title="Verbindungslinien der Sternbilder ein-/ausblenden">╱ Sternbild-Linien</button>
   <button class="btn on" id="brefc" data-action="toggle-reference-circles" title="Himmelsäquator, Wendekreise und Zirkumpolarkreis ein-/ausblenden">◎ Bezugskreise</button>
-  <button class="btn" id="bprec" data-action="toggle-precession-circle" aria-pressed="false" title="Präzessionskreis manuell ein-/ausblenden; in der Präzessions-Didaktik erscheint er automatisch">⟳ Präzession</button>
   <button class="btn on" id="bzod" data-action="toggle-zodiac" title="Sternzeichen (Tierkreiszeichen) ein-/ausblenden">♈ Zeichen</button>
   <button class="btn" id="btwi" data-action="toggle-twilight" title="Dämmerungslinien (−6/−12/−18°) ein-/ausblenden">◔ Dämm.</button>
   <button class="btn on" id="bmeteor" data-action="toggle-meteors" title="Aktive Meteorströme (Radiant + Sternschnuppen) ein-/ausblenden">☄ Meteore</button>
-  <button class="btn on" id="bmwglow" data-action="toggle-milky-way-glow" title="Milchstraßen-Schimmer und Dunkelwolken ein-/ausblenden; echte Gaia-Sterne bleiben sichtbar">🌌 Milchstraße</button>
   <button class="btn" id="blegend" data-action="toggle-legend" title="Zur Legende springen">📖 Legende</button>
   <button class="btn" id="bguide" data-action="scroll-to-guide" title="Zur Anleitung springen">📘 Anleitung</button>
   <button class="btn" id="biss" data-action="toggle-iss">🛰 ISS</button>
@@ -190,7 +176,7 @@ if(location.protocol==="file:"){
 <div class="ctrls" style="margin-top:.15rem">
   <span style="font-size:.72rem;color:#8a7340;align-self:center">Finsternis:</span>
   <button class="btn" data-action="jump-to-eclipse" data-direction="-1" data-eclipse-type="solar" title="Vorherige Sonnenfinsternis: wie nebenan, nur rückwärts in der Zeit">◀ <span class="ecsym">☀&#xFE0E;</span></button>
-  <button class="btn" data-action="jump-to-eclipse" data-direction="1" data-eclipse-type="solar" title="Nächste Sonnenfinsternis: springt zu Datum und Uhrzeit, setzt den Ort auf die Stadt mit der größten Bedeckung, wechselt zur Himmelsansicht und blendet eine Zeile mit Datum, Stadt und Bedeckungsgrad ein"><span class="ecsym">☀&#xFE0E;</span> ▶</button>
+  <button class="btn" data-action="jump-to-eclipse" data-direction="1" data-eclipse-type="solar" title="Nächste Sonnenfinsternis: springt zu Datum und Uhrzeit, setzt den Ort auf die Stadt mit der größten Bedeckung, wechselt zur Himmelsansicht und blendet eine Zeile mit Datum, Stadt, Bedeckungsgrad und dem Schalter „Nächste“ ein"><span class="ecsym">☀&#xFE0E;</span> ▶</button>
   <button class="btn" data-action="jump-to-eclipse" data-direction="-1" data-eclipse-type="lunar" title="Vorherige Mondfinsternis: wie nebenan, nur rückwärts in der Zeit">◀ <span class="ecsym">☾&#xFE0E;</span></button>
   <button class="btn" data-action="jump-to-eclipse" data-direction="1" data-eclipse-type="lunar" title="Nächste Mondfinsternis: springt zu Datum und Uhrzeit; der Beobachtungsort bleibt stehen, weil eine Mondfinsternis von der ganzen Nachthalbkugel aus zu sehen ist"><span class="ecsym">☾&#xFE0E;</span> ▶</button>
 </div>
@@ -245,7 +231,7 @@ if(location.protocol==="file:"){
   <div class="row"><label>🌍 Breite</label><input type="range" id="sLat" min="-90" max="90" step=".1" value="48" data-slider data-input-action="change-latitude"><span id="lLat">–</span></div>
   <div class="row"><label>🌐 Länge</label><input type="range" id="sLng" min="-180" max="180" step=".1" value="13" data-slider data-input-action="change-longitude"><span id="lLng">–</span></div>
   <div class="row"><label>⚡ Speed</label><input type="range" id="sSpd" min="0" max="1000" step="1" value="585" data-slider data-input-action="change-speed"><span id="lSpd">2.3min/s</span></div>
-  <div class="row"><label>🌌 Himmel</label><div style="display:flex;gap:.3rem;flex:1;flex-wrap:wrap"><button type="button" class="gear-btn" id="skyq-city" data-action="set-sky-quality" data-magnitude="4.5">Stadt 4,5<sup>m</sup></button><button type="button" class="gear-btn on" id="skyq-land" data-action="set-sky-quality" data-magnitude="5.5">Land 5,5<sup>m</sup></button><button type="button" class="gear-btn" id="skyq-dark" data-action="set-sky-quality" data-magnitude="6.5" title="Keine Grenzgröße; alle lokal vorhandenen Gaia-Stufen werden verwendet">dunkel · unbegrenzt</button><button type="button" class="gear-btn" id="skyq-parey" data-action="set-parey-profile" title="Sternenblick Parey, 52,678° N / 12,247° O">★ Sternenblick Parey</button><button type="button" class="gear-btn" id="gaia-btn" data-action="open-gaia-dialog" title="Echten Gaia-DR3-Sternkatalog laden oder Ladezustand anzeigen">✦ Gaia…</button><small id="skyq-auto-status" style="flex-basis:100%;opacity:.78">Automatisch nach Standort · Näherung anhand der Ortsliste</small></div></div>
+  <div class="row"><label>🌌 Himmel</label><div style="display:flex;gap:.3rem;flex:1;flex-wrap:wrap"><button type="button" class="gear-btn" id="skyq-city" data-action="set-sky-quality" data-magnitude="4.5">Stadt 4,5<sup>m</sup></button><button type="button" class="gear-btn on" id="skyq-land" data-action="set-sky-quality" data-magnitude="5.5">Land 5,5<sup>m</sup></button><button type="button" class="gear-btn" id="skyq-dark" data-action="set-sky-quality" data-magnitude="6.5" title="Keine Lichtverschmutzungs- oder Grenzgrößenbegrenzung">dunkel · unbegrenzt</button><button type="button" class="gear-btn" id="gaia-btn" data-action="open-gaia-dialog" title="Echten Gaia-DR3-Sternkatalog laden oder Ladezustand anzeigen">✦ Gaia…</button><small id="skyq-auto-status" style="flex-basis:100%;opacity:.78">Automatisch nach Standort · Näherung anhand der Ortsliste</small></div></div>
   <div class="row"><label>⏩ Gang</label><div style="display:flex;gap:.3rem;flex:1;flex-wrap:wrap"><button type="button" class="gear-btn" data-action="set-gear" data-gear="60">1 Min/s</button><button type="button" class="gear-btn" data-action="set-gear" data-gear="3600">1 Std/s</button><button type="button" class="gear-btn" data-action="set-gear" data-gear="86400">1 Tag/s</button><button type="button" class="gear-btn" data-action="set-gear" data-gear="year">1 Jahr/s</button></div></div>
   <div class="row"><label>🔤 Schrift</label><input type="range" id="sFont" min="60" max="180" step="5" value="100" data-slider data-input-action="change-font-scale"><span id="lFont">100%</span></div>
 </div>
@@ -321,7 +307,7 @@ if(location.protocol==="file:"){
       <div class="ag-row">Die Karten oberhalb des Himmels stellen automatisch Ort, Datum, Uhrzeit und teilweise Ansichtsmodus ein und springen direkt zur Himmelskarte.</div>
       <div class="ag-row"><b>Beobachtungsorte:</b> Äquator, Pole und Wendekreise überschreiben bewusst die Koordinaten. Nach dem Sprung ist der Ganghebel auf 1 Std/s vorgewählt; „▶ Start" lässt die Sonne ihren Tagesbogen entlanglaufen. Dämmerungsring und Mondbahn bleiben aus (per Chip zuschaltbar).</div>
       <div class="ag-row"><b>Jahreszeiten:</b> Zeigen Sonnenstand, Ekliptik und Deklination zu Tagundnachtgleichen und Sonnenwenden.</div>
-      <div class="ag-row"><b>Finsternisse:</b> Springen zur nächsten oder vorherigen Sonnen- bzw. Mondfinsternis. Bei einer Sonnenfinsternis wird zusätzlich der Beobachtungsort gesetzt: Unter den 152 Städten der Ortsliste wird diejenige gewählt, in der die Bedeckung am größten ist und die Sonne dabei mindestens 3° hoch steht. Die Ansicht wechselt zum Himmel, und unter der Jahresleiste erscheint eine Zeile mit Datum, Stadt, Land und Bedeckungsgrad sowie dem Schalter „Nächste ▶“. Bei einer Mondfinsternis bleibt der Ort unverändert.</div>
+      <div class="ag-row"><b>Finsternisse:</b> Springen zur nächsten oder vorherigen Sonnen- bzw. Mondfinsternis. Bei einer Sonnenfinsternis wird zusätzlich der Beobachtungsort gesetzt: Unter den 152 Städten der Ortsliste wird diejenige gewählt, in der die Bedeckung am größten ist und die Sonne dabei mindestens 3° hoch steht. Die Ansicht wechselt zum Himmel, und unter der Jahresleiste erscheint eine Zeile mit Datum, Stadt, Land und Bedeckungsgrad sowie dem Schalter „Nächste ▶“, mit dem sich weitere Finsternisse durchsehen lassen. Die Zeile erscheint auch dann, wenn eine Finsternis auf anderem Weg eingestellt wurde, etwa über eine Sprungkarte, und verschwindet nach dem letzten Kontakt wieder. Bei einer Mondfinsternis bleibt der Ort unverändert, weil sie von der ganzen Nachthalbkugel aus zu sehen ist.</div>
       <div class="ag-row"><b>Mondphasen:</b> Neumond, Viertel und Vollmond werden berechnet, nicht als starres Datum gesetzt. Der Sprung wechselt in den Beobachtermodus und richtet die Kamera exakt auf den Mond im Meridian.</div>
       <div class="ag-row"><b>Sonnenjahr — andere Breite:</b> Unter dem Sonnenjahr-Schalter starten vier Knöpfe (Äquator/Wendekreis/Polarkreis/Pol) den Analemma-Lauf wahlweise an dieser geografischen Breite statt in Berlin.</div>
       <div class="ag-row"><b>Sonnenjahr:</b> Läuft mit 5 Tagen/s in feinen Schritten bei fester Uhrzeit und fester Zeitzone ohne Sommerzeit-Umschaltung — dadurch entsteht die Achterschleife des Analemmas gleichmäßig als wachsende Spur, ohne Sprung am Zeitumstellungstag. Die Ekliptik bleibt ausgeblendet, damit die Spur gut erkennbar ist. Der Lauf startet im Beobachtermodus mit fester Kamerahöhe von 26°, damit der Horizont bei allen vier Standorten (auch bei „Sonnenjahr — andere Breite") an derselben Bildstelle liegt und die unterschiedliche Sonnenhöhe vergleichbar wird.</div>
@@ -389,7 +375,7 @@ if(location.protocol==="file:"){
 
     <div class="history-card">
       <h2>Planetarium</h2>
-      <p><b>Version 11.12</b> · Build 20260813a · freigegeben</p>
+      <p><b>Version 11</b> · Build 20260809s · Stand: 09.08.2026</p>
       <p class="muted">Interaktive HTML5-/JavaScript-Sternkarte für didaktische Himmelsansichten, Simulationen und mobile Nutzung.</p>
     </div>
 
@@ -470,7 +456,7 @@ if(location.protocol==="file:"){
     <button id="map-close" data-action="close-map">✕ Schließen</button>
   </div>
 </div>
-<script src="./src/legacy/01-core.js?v=20260813a" defer></script>
+<script src="./src/legacy/01-core.js?v=28" defer></script>
 <script src="./src/legacy/00-scheduler.js" defer></script>
 
 
@@ -516,6 +502,6 @@ if(location.protocol==="file:"){
 
 
 <script src="./src/legacy/14-didactic-focus.js?v=2" defer></script>
-<script type="module" src="./src/main.js?v=38"></script>
+<script type="module" src="./src/main.js?v=32"></script>
 </body>
 </html>

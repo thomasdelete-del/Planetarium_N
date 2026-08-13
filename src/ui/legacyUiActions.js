@@ -22,16 +22,13 @@ export function createLegacyUiActions(globalObject = window) {
 
   const display = {
     "toggle-names": call("togNames"),
-    "toggle-constellation-names": call("togConstellationNames"),
     "toggle-altitude-grid": call("togAlt"),
     "toggle-ra-grid": call("togRA"),
     "toggle-constellation-lines": call("togLines"),
     "toggle-reference-circles": call("togRefCircles"),
-    "toggle-precession-circle": call("togPrecessionCircle"),
     "toggle-zodiac": call("togZodiac"),
     "toggle-twilight": call("togTwilight"),
     "toggle-meteors": call("togMeteors"),
-    "toggle-milky-way-glow": call("togMilkyWayGlow"),
     "toggle-telescope": call("toggleTelescope"),
     "toggle-iss": call("togISS")
   };
@@ -49,7 +46,6 @@ export function createLegacyUiActions(globalObject = window) {
     "apply-coordinates": call("applyManual"),
     "get-gps": call("getGPS"),
     "set-sky-quality": callWithNumber("setSkyQuality", "magnitude"),
-    "set-parey-profile": call("setPareyProfile"),
     "set-gear": ({ element }) => {
       const rawValue = element.dataset.gear;
       const value = rawValue === "year" ? rawValue : Number(rawValue);

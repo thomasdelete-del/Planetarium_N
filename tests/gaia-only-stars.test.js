@@ -11,8 +11,8 @@ test("background star generator is disabled in favor of Gaia DR3", () => {
 });
 
 test("Gaia visibility depth follows zoom and catalog depth", () => {
-  assert.match(core, /if\(basis>=6\.49\)return katalogMax/);
-  assert.match(core, /Math\.log10\(m\)/);
+  assert.match(core, /5\*Math\.log10\(wirksamMm\/augeMm\)/);
+  assert.match(core, /oeffnungMm=70/);
   assert.match(core, /let bgLimit=Math\.min\(15\.5,_gaiaGrenzmag\(zEff\)\)/);
   assert.doesNotMatch(core, /\(zEff-1\)\*\.62/);
   assert.match(core, /bgLimit=Math\.min\(bgLimit,_GAIA\.magMax\+\.05\)/);
@@ -20,7 +20,7 @@ test("Gaia visibility depth follows zoom and catalog depth", () => {
 });
 
 test("Gaia stages are loaded cumulatively as zoom depth grows", () => {
-  assert.match(core, /fetch\("gaia\/manifest\.json\?v=8"\)/);
+  assert.match(core, /fetch\("gaia\/manifest\.json\?v=5"\)/);
   assert.match(core, /m\.strategy!=="cumulative"/);
   assert.match(core, /if\(ziel>_gaiaStufeIndex\)_gaiaStufeLaden\(ziel\)/);
   assert.match(core, /_gaiaStufenPruefen\(\)/);
@@ -32,36 +32,15 @@ test("deep Gaia stars are streamed only for visible display tiles", () => {
   assert.match(core, /sort\(\(a,b\)=>a\[1\]\.used-b\[1\]\.used\)/);
   assert.match(core, /_gaiaStreamPruefen\(_sichtZellen,bgLimit\)/);
   assert.match(core, /const tief=_gaiaStreamFuerZelle\(zk\)/);
-  assert.match(core, /function _gaiaKachelDekodieren\(buf\)/);
-  assert.match(core, /new Worker\("\.\/src\/workers\/gaiaTileWorker\.js",\{type:"module"\}\)/);
-  assert.match(core, /Promise\.resolve\(gaiaVektorKachelLesen\(buf\)\)/);
+  assert.match(core, /gaiaVektorKachelLesen\(ab\)/);
   assert.match(core, /if\(G\.vector\)\{x0=G\.vx\[i\]/);
-  assert.match(core, /_gaiaKachelnLaden\.size>=budget\.parallel/);
-  assert.match(core, /function _gaiaStreamBudget\(\)/);
+  assert.match(core, /_gaiaKachelnLaden\.size>=4/);
+  assert.match(core, /GAIA_STREAM_CACHE_MAX=24/);
 });
 
 test("stereographic view cone includes the complete viewport edge", () => {
   assert.match(core, /_angR=2\*Math\.atan\(Math\.hypot/);
   assert.doesNotMatch(core, /_angR=Math\.atan\(Math\.hypot/);
-});
-
-test("Gaia interaction LOD also applies at dark sites", () => {
-  assert.match(core, /if\(_gaiaFast\)\{const fastMag=zEff>=4\?9:zEff>=2\?8\.3:7\.4/);
-  assert.doesNotMatch(core, /_gaiaFast&&\(window\.skyMagBase\|\|6\.5\)<6\.49/);
-});
-
-test("Gaia depth light is projected in observer mode", () => {
-  assert.match(core, /if\(_rm\)\{[\s\S]*?const d=u\*_rsA\*_rcc/);
-  assert.doesNotMatch(core, /nightF>\.18&&!_rm/);
-  assert.match(core, /if\(!_imBild\(x,y\)\)continue/);
-});
-
-test("Milky Way resolves progressively into denser Gaia stars near 2x", () => {
-  assert.match(core, /const mwZoomFade=_mwMag<=1\.2\?1:Math\.max\(0,1-\(_mwMag-1\.2\)\*\.56\)/);
-  assert.match(core, /Math\.round\(16\/Math\.max\(1,zEff\*zEff\)\)/);
-  assert.match(core, /Math\.min\(8,Math\.sqrt\(\(b-a\)\/180\)\)/);
-  assert.match(core, /boost\[cell\]=Math\.max\(0,Math\.min\(5,Math\.round\(Math\.log2\(\(1\+5\.2\*plane\*bulge\)\*density\)\*2\)\)\)/);
-  assert.match(core, /const dichteStufe=D\.boost\?D\.boost\[cell\]:0/);
 });
 
 test("Milky Way dust stays behind Gaia catalog stars", () => {

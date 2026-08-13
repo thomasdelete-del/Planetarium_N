@@ -26,7 +26,7 @@ export const sceneCatalog = Object.freeze([
   define("solar-eclipse-prev", "eclipse", "Vorherige Sonnenfinsternis"),
   define("lunar-eclipse", "eclipse", "Nächste Mondfinsternis"),
   define("lunar-eclipse-prev", "eclipse", "Vorherige Mondfinsternis"),
-  define("eclipse-2026-spain", "eclipse", "Nächste in Europa sichtbare Sonnenfinsternis"),
+  define("eclipse-2026-spain", "eclipse", "Sonnenfinsternis Spanien 2026"),
 
   define("new-moon", "moon", "Neumond"),
   define("first-quarter", "moon", "Erstes Viertel"),

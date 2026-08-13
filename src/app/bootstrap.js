@@ -15,7 +15,6 @@ import { bindActions } from "../ui/bindActions.js";
 import { createLegacyUiActions } from "../ui/legacyUiActions.js";
 import { bindInputs } from "../ui/bindInputs.js";
 import { createLegacyInputActions } from "../ui/legacyInputActions.js";
-import { createGaiaSpatialCatalog } from "../gaia/spatialCatalog.js";
 
 export function bootstrapApplication({ documentObject = document, globalObject = window } = {}) {
   if (globalObject.planetarium?.getState) return globalObject.planetarium;
@@ -27,7 +26,6 @@ export function bootstrapApplication({ documentObject = document, globalObject =
     dispatch: store.dispatch,
     legacyGlobal: globalObject
   });
-  const gaia3d = createGaiaSpatialCatalog();
   const cleanup = [
     bindSceneButtons({
       root: documentObject,
@@ -54,13 +52,11 @@ export function bootstrapApplication({ documentObject = document, globalObject =
   const destroy = () => {
     cleanup.splice(0).reverse().forEach((unbind) => unbind());
     store.destroy();
-    gaia3d.clear();
     delete documentObject.documentElement.dataset.appReady;
     if (globalObject.planetarium === api) delete globalObject.planetarium;
   };
   api = Object.freeze({
     astronomy,
-    gaia3d,
     calendar,
     speedControl,
     scenes: sceneCatalog,
