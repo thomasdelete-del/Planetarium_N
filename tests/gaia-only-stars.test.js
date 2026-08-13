@@ -38,6 +38,9 @@ test("deep Gaia stars are streamed only for visible display tiles", () => {
   assert.match(core, /if\(G\.vector\)\{x0=G\.vx\[i\]/);
   assert.match(core, /_gaiaKachelnLaden\.size>=budget\.parallel/);
   assert.match(core, /function _gaiaStreamBudget\(\)/);
+  assert.match(core, /const _sichtZelleHinzufuegen=ri=>/);
+  assert.match(core, /if\(_rm&&_cullCos>-1\.5\)/);
+  assert.match(core, /_sichtZellen\.push\(zk\)/);
 });
 
 test("stereographic view cone includes the complete viewport edge", () => {

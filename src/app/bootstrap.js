@@ -12,7 +12,7 @@ import { sceneCatalog } from "../features/scenes/sceneCatalog.js";
 import { createSceneController } from "../features/scenes/sceneController.js";
 import { bindSceneButtons } from "../ui/bindSceneButtons.js";
 import { bindActions } from "../ui/bindActions.js";
-import { createLegacyUiActions } from "../ui/legacyUiActions.js";
+import { createLegacyUiActions } from "../ui/legacyUiActions.js?v=20260813c";
 import { bindInputs } from "../ui/bindInputs.js";
 import { createLegacyInputActions } from "../ui/legacyInputActions.js";
 import { createGaiaSpatialCatalog } from "../gaia/spatialCatalog.js";

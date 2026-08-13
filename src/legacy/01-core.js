@@ -184,14 +184,27 @@ function setSkyQuality(m,source){
   }
   const status=document.getElementById("skyq-auto-status");
   if(status&&source!=="auto")status.textContent=m>=6.49?"dunkel · unbegrenzt · keine Grenzgröße":"Manuell gewählt · beim nächsten Standortwechsel wieder automatisch";
+  /* Bei einem real dunklen Standort wird der kuenstliche Schimmer samt
+     Dunkelwolken ausgeschaltet. Die davon unabhaengigen Gaia-Sterne bleiben. */
+  if(m>=6.49){window.didHideMW=true;window.didHideMWGlow=true}
+  const mwButton=document.getElementById("bmwglow");
+  if(mwButton){const visible=window.didHideMW!==true;mwButton.classList.toggle("on",visible);mwButton.setAttribute("aria-pressed",String(visible))}
   if(typeof draw==="function")try{draw()}catch(e){}
 }
 function setPareyProfile(){
   lat=52.678;lng=12.247;selCity=null;
   try{updateLocDisp("Sternenblick Parey",lat,lng)}catch(e){}
-  updateTimezone();updLabels();setSkyQuality(6.5,"parey");
-  const status=document.getElementById("skyq-auto-status");if(status)status.textContent="Sternenblick Parey · 52,678° N · 12,247° O · dunkel unbegrenzt";
-  try{if(typeof showToast==="function")showToast("Sternenblick Parey aktiviert · dunkel unbegrenzt")}catch(e){}
+  updateTimezone();
+  /* Parey liegt in der dunkelsten Zone des Sternenparks Westhavelland. Das
+     Anwendungsmodell bildet diese geringe reale Lichtverschmutzung mit seinem
+     Standortprofil "dunkel" ab; alle anderen Ansichtsparameter bleiben bestehen. */
+  updLabels();setSkyQuality(6.5,"parey");
+  const status=document.getElementById("skyq-auto-status");
+  if(status){status.textContent="Sternenblick Parey · geringe reale Lichtverschmutzung · Profil dunkel";status.title="Standortbezogene Näherung für den Sternenpark Westhavelland; Wetter, Mondlicht und momentane lokale Beleuchtung sind nicht enthalten."}
+  try{if(typeof showToast==="function")showToast("Sternenblick Parey · Lichtverschmutzung: dunkel")}catch(e){}
+  /* Falls beim Klick noch die kleine Gaia-Startstufe geladen wird, darf der
+     Wunsch nach dem tiefen dunklen Katalog nicht verloren gehen. */
+  try{_gaiaStart();_gaiaStufenPruefen()}catch(e){}
   if(typeof draw==="function")draw();
 }
 /* Die manuelle Himmelsqualitaet ueberlebt einen Browser-Reload. */
@@ -614,7 +627,12 @@ function _gaiaStufeLaden(index){
   fetch(stufe.file+"?v="+_gaiaManifestVersion).then(r=>r.ok?r.arrayBuffer():Promise.reject(new Error("HTTP "+r.status))).then(ab=>{
     _gaiaSetzen(ab,false);_gaiaStufeIndex=index;
     try{const gb=document.getElementById("gaia-btn");if(gb){gb.textContent="✦ Gaia "+String(stufe.magnitude).replace(".",",")+"ᵐ";gb.title="Gaia DR3 bis "+stufe.magnitude+" mag: "+stufe.count.toLocaleString("de-DE")+" Sterne"}}catch(e){}
-  }).catch(()=>{_gaiaStufeFehlerBis=Date.now()+10000}).finally(()=>{_gaiaStufeLaedt=false});
+  }).catch(()=>{_gaiaStufeFehlerBis=Date.now()+10000}).finally(()=>{
+    _gaiaStufeLaedt=false;
+    /* Eine bereits laufende kleinere Stufe konnte einen inzwischen höheren
+       Bedarf blockieren. Nach jedem Abschluss unmittelbar weiterstaffeln. */
+    try{_gaiaStufenPruefen()}catch(e){}
+  });
 }
 function _gaiaStufenPruefen(){
   if(!_gaiaStufen||_gaiaStufeLaedt)return;
@@ -1624,11 +1642,30 @@ if(op!==curOp){g.globalAlpha=op;curOp=op}if(rad<1.1||rad<=rbg*.96){g.fillRect(x-
   };
   const _sichtZellen=[];
   for(let di=di0;di<=di1;di++){
-    if(riList){for(const ri of riList)_sichtZellen.push(di*GRID_RA+ri)}
-    else for(let ri=0;ri<GRID_RA;ri++)_sichtZellen.push(di*GRID_RA+ri);
+    const _sichtZelleHinzufuegen=ri=>{
+      const zk=di*GRID_RA+ri;
+      /* Im Beobachter- und Lagemodus ganze Katalogzellen vorab am
+         Kamerakegel verwerfen. So werden nur Zellen des sichtbaren Ausschnitts
+         an Basis-, Gaia- und Streaming-Katalog weitergereicht. */
+      if(_rm&&_cullCos>-1.5){
+        const ra=(ri+.5)/GRID_RA*Math.PI*2,de=(di+.5)/GRID_DEC*Math.PI-Math.PI/2,cd=Math.cos(de);
+        const x0=cd*Math.cos(ra),y0=cd*Math.sin(ra),z0=Math.sin(de),dm=_gM;
+        const X=dm?dm.m00*x0+dm.m01*y0+dm.m02*z0:x0;
+        const Y=dm?dm.m10*x0+dm.m11*y0+dm.m12*z0:y0;
+        const Z=dm?dm.m20*x0+dm.m21*y0+dm.m22*z0:z0;
+        if(X*_cullX+Y*_cullY+Z*_cullZ<_cullCos-.13)return;
+      }
+      _sichtZellen.push(zk);
+    };
+    if(riList){for(const ri of riList)_sichtZelleHinzufuegen(ri)}
+    else for(let ri=0;ri<GRID_RA;ri++)_sichtZelleHinzufuegen(ri);
   }
   _gaiaStreamPruefen(_sichtZellen,bgLimit);
-  if(starGrid){for(const zk of _sichtZellen){drawCell(starGrid[zk]);drawGaia(zk);if(!_gaiaFast||(window.skyMagBase||6.5)>=6.49){const tief=_gaiaStreamFuerZelle(zk);if(tief)drawGaia(zk,tief)}}}g.globalAlpha=1}try{if(window.__mwDunkel)window.__mwDunkel()}catch(e){}/* Deep-Sky-Objekte werden in jeder Ansicht gezeichnet. Die Grenzgroesse hat einen
+  /* Tiefe Sichtfeldkacheln niemals waehrend einer Schwenkgeste durchlaufen.
+     Gerade bei "dunkel" enthielten sie hunderttausende Quellen, die der
+     Fast-Magnitude-Filter anschliessend ohnehin verwarf. Das volle Bild wird
+     im Abschlussbild unmittelbar nach pointerup wieder gezeichnet. */
+  if(starGrid){for(const zk of _sichtZellen){drawCell(starGrid[zk]);drawGaia(zk);if(!_gaiaFast){const tief=_gaiaStreamFuerZelle(zk);if(tief)drawGaia(zk,tief)}}}g.globalAlpha=1}try{if(window.__mwDunkel)window.__mwDunkel()}catch(e){}/* Deep-Sky-Objekte werden in jeder Ansicht gezeichnet. Die Grenzgroesse hat einen
    Sockel von 5,5 mag, was bei einfacher Vergroesserung 16 der 110 Messier-Objekte
    zeigt - ungefaehr das, was dem blossen Auge unter dunklem Himmel zugaenglich ist.
    Ob ein Objekt als Wolke in wahrer Gestalt oder als Sinnbild erscheint, entscheidet
@@ -1866,7 +1903,18 @@ function _himmelSichtbar(){
     return true;
   }catch(e){return true}
 }
-let __loopPending=false;
+let __loopPending=false,__lastRenderedJD=null,__lastLabelTS=0;
+/* Astronomische Neuberechnung erst ab einer sichtbaren Verschiebung. Die
+   scheinbare Himmelsdrehung betraegt rund 15 Grad je Stunde. Aus dem aktuellen
+   Projektionsmassstab folgt, wie viele Simulationsminuten einem Bildpixel
+   entsprechen. Starker Zoom verkleinert die Zeitschwelle automatisch. */
+function __astronomyPixelMinutes(){
+  const span=Math.max(1,Math.min(cvW||W,cvH||W));
+  const pxRad=viewMode==="real"
+    ?span/2/Math.tan(Math.max(.325,camFov)*Math.PI/720)
+    :(span*.47/(Math.PI/2))*Math.max(1,zoom);
+  return Math.max(.01,Math.min(1,1/Math.max(.001,pxRad*Math.PI/720)));
+}
 function __requestPlanetariumFrame(){
   if(__loopPending||document.hidden)return;
   __loopPending=true;
@@ -1881,7 +1929,7 @@ function loop(ts){__loopPending=false;const _sicht=_himmelSichtbar();
    Mond und Planeten nicht, die zwischengespeicherte Praezession bleibt gueltig, und
    das Bild folgt allein dem Finger. lastT wird trotzdem weiter nachgefuehrt, sodass
    beim Loslassen kein Zeitsprung entsteht. */
-if(!paused&&lastT!==null&&!sliderActive&&!(interacting>0)&&_sicht){const dt=Math.min((ts-lastT)/1e3,.08);simMin+=speed*dt/60;if(simMin>=1440){simMin-=1440;simDay++;if(simDay>daysInYear(simYear)){simDay=1;simYear++}}if(simMin<0){simMin+=1440;simDay--;if(simDay<1){simYear--;simDay=daysInYear(simYear)}}document.getElementById("sTime").value=Math.round(simMin);document.getElementById("dayslider").value=simDay;updLabels()}if(!paused)lastT=ts;else lastT=null;if(interacting>0)interacting--;{const zr=document.getElementById("telfac");if(zr){const zm=curMag();const t="🔭 "+(zm<10?zm.toFixed(1):Math.round(zm))+"×";zr.style.opacity=zm>1.05?1:.55;if(zr.textContent!==t)zr.textContent=t}}{const pb=document.getElementById("bpause");if(pb){const _ez=(paused||Math.abs(speed-1)<0.02);const t=_ez?"▶":"⏸";const html='<span class="bsym">'+t+'</span>';if(pb.innerHTML!==html)pb.innerHTML=html;pb.classList.toggle("on",!_ez)}}if(orientMode)stepOrient();{const ta="pan-y";if(cv.style.touchAction!==ta)cv.style.touchAction=ta}__wlSync(ts||0);const __act=!paused||interacting>0||orientMode||sliderActive;if(_sicht&&(__act||((ts||0)-__idleTS)>600)){__idleTS=ts||0;draw()}
+if(!paused&&lastT!==null&&!sliderActive&&!(interacting>0)&&_sicht){const dt=Math.min((ts-lastT)/1e3,.08);simMin+=speed*dt/60;if(simMin>=1440){simMin-=1440;simDay++;if(simDay>daysInYear(simYear)){simDay=1;simYear++}}if(simMin<0){simMin+=1440;simDay--;if(simDay<1){simYear--;simDay=daysInYear(simYear)}}if((ts||0)-__lastLabelTS>=250){__lastLabelTS=ts||0;document.getElementById("sTime").value=Math.round(simMin);document.getElementById("dayslider").value=simDay;updLabels()}}if(!paused)lastT=ts;else lastT=null;if(interacting>0)interacting--;{const zr=document.getElementById("telfac");if(zr){const zm=curMag();const t="🔭 "+(zm<10?zm.toFixed(1):Math.round(zm))+"×";zr.style.opacity=zm>1.05?1:.55;if(zr.textContent!==t)zr.textContent=t}}{const pb=document.getElementById("bpause");if(pb){const _ez=(paused||Math.abs(speed-1)<0.02);const t=_ez?"▶":"⏸";const html='<span class="bsym">'+t+'</span>';if(pb.innerHTML!==html)pb.innerHTML=html;pb.classList.toggle("on",!_ez)}}if(orientMode)stepOrient();{const ta="pan-y";if(cv.style.touchAction!==ta)cv.style.touchAction=ta}__wlSync(ts||0);const __jdNow=currentJD(),__timeMoved=__lastRenderedJD===null||Math.abs(__jdNow-__lastRenderedJD)*1440>=__astronomyPixelMinutes();const __act=interacting>0||orientMode||sliderActive||(!paused&&__timeMoved);if(_sicht&&(__act||((ts||0)-__idleTS)>600)){__idleTS=ts||0;draw();__lastRenderedJD=__jdNow}
   if(_sicht){try{eclBoxAuto()}catch(e){}}
   try{_gaiaStufenPruefen();if(!_GAIA&&!_gaiaGefragt&&typeof curMag==="function"&&curMag()>=3)gaiaDialog()}catch(e){}
   if(!paused||interacting>0||orientMode||sliderActive)__requestPlanetariumFrame()
@@ -3276,7 +3324,7 @@ function togMilkyWayGlow(){
   const active=new Set();
   cv.addEventListener("pointerdown",e=>{if(!insideHorizon(e.clientX,e.clientY))return;active.add(e.pointerId);interacting=8;__requestPlanetariumFrame()},{passive:true});
   window.addEventListener("pointermove",e=>{if(!active.has(e.pointerId))return;interacting=8;__requestPlanetariumFrame()},{passive:true});
-  const end=e=>{if(!active.delete(e.pointerId))return;interacting=2;__requestPlanetariumFrame()};
+  const end=e=>{if(!active.delete(e.pointerId))return;interacting=0;__requestPlanetariumFrame()};
   window.addEventListener("pointerup",end,{passive:true});
   window.addEventListener("pointercancel",end,{passive:true});
 })();

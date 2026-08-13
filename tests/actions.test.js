@@ -123,6 +123,15 @@ test("Einfache Bedienschalter sind vollständig im Aktionsregister verfügbar", 
   assert.deepEqual(calls, legacyNames);
 });
 
+test("Sternenblick-Parey-Test ist als UI-Aktion verfügbar", () => {
+  const calls = [];
+  const actions = createLegacyUiActions(new Proxy({}, {
+    get: (_target, name) => (...args) => calls.push([name, ...args])
+  }));
+  actions["set-parey-profile"]();
+  assert.deepEqual(calls, [["setPareyProfile"]]);
+});
+
 test("Didaktische Parameteraktionen akzeptieren nur definierte Werte", () => {
   const calls = [];
   const lineButton = { dataset: {} };

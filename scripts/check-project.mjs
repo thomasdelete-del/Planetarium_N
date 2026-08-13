@@ -105,7 +105,9 @@ for (const file of listJavaScriptFiles(path.join(root, "src"))) {
   ].map((match) => match[1]);
   for (const specifier of specifiers) {
     moduleImportCount += 1;
-    const target = path.resolve(path.dirname(file), specifier);
+    /* Browser-Module dürfen Cache-Versionen als URL-Suchparameter tragen.
+       Für die lokale Existenzprüfung zählt nur der Dateipfad. */
+    const target = path.resolve(path.dirname(file), specifier.split(/[?#]/, 1)[0]);
     if (!fs.existsSync(target)) {
       missingModuleImports.push(`${path.relative(root, file)} -> ${specifier}`);
     }
