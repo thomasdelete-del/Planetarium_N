@@ -24,9 +24,10 @@ try {
 }
 const gaiaVersion = gaiaHeader.readUInt32LE(4);
 const gaiaRecordCount = gaiaHeader.readUInt32LE(8);
-const gaiaExpectedSize = 16 + gaiaRecordCount * 36;
+const gaiaRecordSize = gaiaVersion >= 2 ? 44 : 36;
+const gaiaExpectedSize = 16 + gaiaRecordCount * gaiaRecordSize;
 const gaiaActualSize = fs.statSync(gaiaPath).size;
-if (gaiaHeader.toString("ascii", 0, 4) !== "GDR3" || gaiaVersion !== 1) {
+if (gaiaHeader.toString("ascii", 0, 4) !== "GDR3" || ![1, 2].includes(gaiaVersion)) {
   throw new Error("Gaia-Katalog besitzt keine unterstützte GDR3-Kennung oder Formatversion.");
 }
 if (gaiaActualSize !== gaiaExpectedSize) {
@@ -41,13 +42,23 @@ if (compactGaia.toString("ascii", 0, 4) !== "GDR3" || compactGaia.readUInt32LE(4
   throw new Error("Kompakter Gaia-Katalog besitzt keine unterstützte GDR3-Kennung.");
 }
 const gaiaManifest = JSON.parse(fs.readFileSync(path.join(root, "gaia", "manifest.json"), "utf8"));
+if (gaiaVersion >= 2) {
+  const spatial = gaiaManifest.spatial3d;
+  const spatialPath = spatial?.file && path.join(root, spatial.file);
+  const spatialBytes = spatialPath && fs.existsSync(spatialPath) ? fs.readFileSync(spatialPath) : null;
+  if (!spatialBytes || spatialBytes.toString("ascii", 0, 4) !== "G3V2"
+      || spatialBytes.readUInt32LE(8) !== spatial.count || spatialBytes.length !== spatial.bytes) {
+    throw new Error("Raeumlicher Gaia-Katalog fehlt oder ist inkonsistent.");
+  }
+}
 const deepestGaiaStage = gaiaManifest.stages?.at(-1);
 if (compactGaia.length !== compactExpectedSize || !deepestGaiaStage
     || compactCount !== deepestGaiaStage.count || compactGaia.length !== deepestGaiaStage.bytes) {
   throw new Error("Kompakter Gaia-Katalog ist inkonsistent oder nicht verdichtet.");
 }
-if ((html.match(/<script\b/g) || []).length !== 16) {
-  throw new Error("Es werden 15 Legacy-Skripte und ein Modul-Bootstrap erwartet.");
+const externalScripts = [...html.matchAll(/<script\b[^>]*\bsrc="([^"]+)"[^>]*>/g)];
+if (externalScripts.length !== 16) {
+  throw new Error("Es werden 15 externe Legacy-Skripte und ein Modul-Bootstrap erwartet.");
 }
 if (/onclick="[^"]*\b(?:jumpScene|selectScene)\(/.test(html)) {
   throw new Error("HTML darf keinen Szenen-Dispatcher direkt aufrufen.");

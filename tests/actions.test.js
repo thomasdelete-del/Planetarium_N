@@ -31,10 +31,12 @@ test("UI-Aktionsregister delegiert an vorhandene Legacy-Funktionen", () => {
     openMap: () => calls.push("open-map"),
     closeMap: () => calls.push("close-map"),
     togNames: () => calls.push("names"),
+    togConstellationNames: () => calls.push("constellation-names"),
     togAlt: () => calls.push("altitude-grid"),
     togRA: () => calls.push("ra-grid"),
     togLines: () => calls.push("constellation-lines"),
     togRefCircles: () => calls.push("reference-circles"),
+    togPrecessionCircle: () => calls.push("precession-circle"),
     togZodiac: () => calls.push("zodiac"),
     togTwilight: () => calls.push("twilight"),
     togMeteors: () => calls.push("meteors")
@@ -48,17 +50,19 @@ test("UI-Aktionsregister delegiert an vorhandene Legacy-Funktionen", () => {
   actions["open-map"]();
   actions["close-map"]();
   actions["toggle-names"]();
+  actions["toggle-constellation-names"]();
   actions["toggle-altitude-grid"]();
   actions["toggle-ra-grid"]();
   actions["toggle-constellation-lines"]();
   actions["toggle-reference-circles"]();
+  actions["toggle-precession-circle"]();
   actions["toggle-zodiac"]();
   actions["toggle-twilight"]();
   actions["toggle-meteors"]();
   assert.deepEqual(calls, [
     "sky", "legend", "guide", "year", "date", "open-map", "close-map",
-    "names", "altitude-grid", "ra-grid", "constellation-lines",
-    "reference-circles", "zodiac", "twilight", "meteors"
+    "names", "constellation-names", "altitude-grid", "ra-grid", "constellation-lines",
+    "reference-circles", "precession-circle", "zodiac", "twilight", "meteors"
   ]);
 });
 
