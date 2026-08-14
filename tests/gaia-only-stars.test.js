@@ -53,6 +53,40 @@ test("Gaia interaction LOD also applies at dark sites", () => {
   assert.doesNotMatch(core, /_gaiaFast&&\(window\.skyMagBase\|\|6\.5\)<6\.49/);
 });
 
+test("vertical panning defers Gaia reprojection until gesture end", () => {
+  assert.match(core, /const active=new Map\(\)/);
+  assert.match(core, /start\.vertical=Math\.abs\(dy\)>Math\.abs\(dx\)\*1\.15/);
+  assert.match(core, /const _gaiaGpuHold=window\.__gaiaVerticalPan===true/);
+  assert.doesNotMatch(core, /draw=function\(\)\{if\(window\.__gaiaVerticalPan\)return/);
+  assert.match(core, /window\.__gaiaVerticalPan=false;\/\* Der Abschlussframe muss als aktive Aenderung gelten; mit 0 verwarf der Scheduler ihn\. \*\/interacting=2;__requestPlanetariumFrame\(\)/);
+});
+
+test("mode changes schedule a complete Gaia quality frame", () => {
+  assert.match(core, /function __requestSettledSkyFrame\(\)/);
+  assert.match(core, /__settledSkyFrameTimer=setTimeout\(\(\)=>\{interacting=0;if\(W\)draw\(\)\},90\)/);
+  assert.match(core, /function toggleViewMode\(\)\{[\s\S]*?__requestSettledSkyFrame\(\)/);
+});
+
+test("fast time lapse limits exact astronomy frames by visible pixel motion", () => {
+  assert.match(core, /const targetPx=Math\.abs\(speed\)>=3600\?2:Math\.abs\(speed\)>=900\?1\.35:1/);
+  assert.match(core, /function __astronomyFrameInterval\(\)\{const s=Math\.abs\(speed\);return s>=3600\?33:s>=900\?24:0\}/);
+  assert.match(core, /__timeMoved&&__frameReady/);
+  assert.match(core, /__lastAstronomyTS=ts\|\|0;draw\(\)/);
+});
+
+test("observer and orientation modes label more bright stars", () => {
+  assert.match(core, /const starNameLimit=viewMode==="real"\?Math\.min\(4,3\.4\+\.3\*Math\.log2\(Math\.max\(1,zEff\)\)\):1\.8/);
+});
+
+test("orientation mode uses continuous site-aware stellar photometry", () => {
+  assert.match(core, /function orientStarStyle\(mag,scale\)/);
+  assert.match(core, /const lim=window\.skyMagBase\|\|5\.5/);
+  assert.match(core, /edge\*edge\*\(3-2\*edge\)/);
+  assert.match(core, /orientStyle=orientMode\?orientStarStyle\(mag,PX\/zoom\):null/);
+  assert.match(core, /orientStyle=orientMode\?orientStarStyle\(mag,rbg\):null/);
+  assert.match(core, /sinA>0\?extBySinAlt\(sinA\):orientMode\?0:\.55/);
+});
+
 test("Gaia depth light is projected in observer mode", () => {
   assert.match(core, /if\(_rm\)\{[\s\S]*?const d=u\*_rsA\*_rcc/);
   assert.doesNotMatch(core, /nightF>\.18&&!_rm/);
