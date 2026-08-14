@@ -3,6 +3,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 const core = readFileSync(new URL("../src/legacy/01-core.js", import.meta.url), "utf8");
+const labelCadence = readFileSync(new URL("../src/features/render/labelCadence.js", import.meta.url), "utf8");
 
 test("background star generator is disabled in favor of Gaia DR3", () => {
   assert.match(core, /function buildStarField\(\)\{return\[\{ra:0,de:0,mag:99,gaiaGridSentinel:true\}\]/);
@@ -58,7 +59,8 @@ test("vertical panning defers Gaia reprojection until gesture end", () => {
   assert.match(core, /start\.vertical=Math\.abs\(dy\)>Math\.abs\(dx\)\*1\.15/);
   assert.match(core, /const _gaiaGpuHold=window\.__gaiaVerticalPan===true/);
   assert.doesNotMatch(core, /draw=function\(\)\{if\(window\.__gaiaVerticalPan\)return/);
-  assert.match(core, /window\.__gaiaVerticalPan=false;\/\* Der Abschlussframe muss als aktive Aenderung gelten; mit 0 verwarf der Scheduler ihn\. \*\/interacting=2;__requestPlanetariumFrame\(\)/);
+  assert.match(core, /window\.__gaiaVerticalPan=false;[\s\S]*?__requestSettledSkyFrame\(\)/);
+  assert.match(core, /cv\.addEventListener\("wheel",__requestSettledSkyFrame/);
 });
 
 test("mode changes schedule a complete Gaia quality frame", () => {
@@ -68,8 +70,11 @@ test("mode changes schedule a complete Gaia quality frame", () => {
 });
 
 test("fast time lapse limits exact astronomy frames by visible pixel motion", () => {
-  assert.match(core, /const targetPx=Math\.abs\(speed\)>=3600\?2:Math\.abs\(speed\)>=900\?1\.35:1/);
-  assert.match(core, /function __astronomyFrameInterval\(\)\{const s=Math\.abs\(speed\);return s>=3600\?33:s>=900\?24:0\}/);
+  assert.match(core, /const targetPx=absSpeed>=60\?Math\.max\(\.02,Math\.min\(\.65,absSpeed\/3600\*\.65\)\):1/);
+  assert.match(core, /function __fastTimeIsDaylight\(\)/);
+  assert.match(core, /function __astronomyFrameInterval\(\)\{const s=Math\.abs\(speed\),p=window\.__devicePerformanceProfile/);
+  assert.match(core, /if\(__fastTimeIsDaylight\(\)\)return 16;return p==="low"\?24:16/);
+  assert.match(core, /if\(s>=60\)return p==="low"\?24:16/);
   assert.match(core, /__timeMoved&&__frameReady/);
   assert.match(core, /__lastAstronomyTS=ts\|\|0;draw\(\)/);
 });
@@ -91,6 +96,24 @@ test("Gaia depth light is projected in observer mode", () => {
   assert.match(core, /if\(_rm\)\{[\s\S]*?const d=u\*_rsA\*_rcc/);
   assert.doesNotMatch(core, /nightF>\.18&&!_rm/);
   assert.match(core, /if\(!_imBild\(x,y\)\)continue/);
+});
+
+test("Gaia depth light uses a persistent GPU buffer in observer mode", () => {
+  assert.match(core, /densityLayer:true/);
+  assert.match(core, /const _gaiaDichteGpuMoeglich=!orientMode&&_gaiaGLInit\(\)/);
+  assert.match(core, /density:_gaiaGpuDensity/);
+  assert.match(core, /e\.density\?gl\.ONE:gl\.ONE_MINUS_SRC_ALPHA/);
+});
+
+test("labels and constellation lines follow every rendered fast-time frame", () => {
+  assert.match(labelCadence, /Math\.abs\(Number\(legacy\.get\("speed"\)\) \|\| 0\) >= 900/);
+  assert.match(labelCadence, /const refresh = force \|\| fastSky \|\| now - lastFrame >= intervalMs/);
+});
+
+test("local declination reference circles use stationary hour-angle samples", () => {
+  assert.match(core, /function decCircle\(decDeg\)[\s\S]*?const step=\.08,lstH=LST\(\)\/15/);
+  assert.match(core, /for\(let hourAngle=-12;hourAngle<=12\.001;hourAngle\+=step\)/);
+  assert.match(core, /const raH=lstH-hourAngle/);
 });
 
 test("Milky Way resolves progressively into denser Gaia stars near 2x", () => {

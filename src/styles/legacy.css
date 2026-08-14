@@ -707,11 +707,13 @@ body.fullscreen #bview-fs{display:flex;position:fixed;top:calc(env(safe-area-ins
    click() in mehreren Browsern nicht. Es wird deshalb nur unsichtbar gemacht. */
 #gaia-dlg .gd-datei{position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;
   clip:rect(0 0 0 0);border:0;padding:0;margin:-1px}
-#ecl-info .ei-txt{overflow:hidden;text-overflow:ellipsis}
-#ecl-info .ei-ort{color:#e8d08a;font-weight:650}
+#ecl-info .ei-date,#ecl-info .ei-place,#ecl-info .ei-cover{overflow:hidden;text-overflow:ellipsis}
+#ecl-info .ei-place{color:#e8d08a;font-weight:650}
+#ecl-info .ei-date:not(:empty)::after,#ecl-info .ei-place:not(:empty)::after{content:" ·";color:#8290aa;margin-left:.32rem}
 #ecl-info button{font-family:'Inter',system-ui,sans-serif;font-size:.6rem;font-weight:650;
   color:#0b1a22;background:#e8d08a;border:none;border-radius:999px;
   padding:.26rem .6rem;cursor:pointer;flex:none;-webkit-tap-highlight-color:transparent}
 #ecl-info button.ei-zu{background:transparent;color:#cbb98a;border:1px solid rgba(201,168,76,.4);padding:.2rem .42rem}
-body.fullscreen #ecl-info{display:none!important}
+@media(max-width:620px){#ecl-info{gap:.28rem;max-width:98vw;padding-left:.3rem;font-size:.56rem}
+  #ecl-info button{font-size:.54rem;padding:.24rem .42rem}}
 #panel-handle{left:52%!important;max-width:48vw!important}
