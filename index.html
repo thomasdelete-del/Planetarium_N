@@ -24,7 +24,7 @@ if(location.protocol==="file:"){
 <div id="scroller">
 <section id="page-jumps" class="snap">
   <div class="jump-shell">
-    <div class="jump-title"><span class="title-main">Planetarium</span><span class="title-build">Version 11.22 · Build 20260814h · freigegeben</span></div>
+    <div class="jump-title"><span class="title-main">Planetarium</span><span class="title-build">Version 11.26 · Build 20260815d · freigegeben</span></div>
     <div class="jump-sub">Didaktische Sprünge, Simulationen und Sternbild-Lernmodus. Jeder Schalter setzt Ort, Datum und Uhrzeit astronomisch plausibel und springt direkt zur Sternkarte.</div>
     <button class="jump-home" data-scene-id="current">🏠 Aktueller Himmel ▾</button>
 
@@ -138,7 +138,7 @@ if(location.protocol==="file:"){
   </div>
 </section>
 <section id="page-sky" class="snap">
-<header><h1>Planetarium</h1><p>Version 11.22 · Build 20260814h · freigegeben</p><div id="verinfo">Version 11.22 · Build 20260814h · freigegeben</div></header>
+<header><h1>Planetarium</h1><p>Version 11.26 · Build 20260815d · freigegeben</p><div id="verinfo">Version 11.26 · Build 20260815d · freigegeben</div></header>
 <div id="readout">–</div>
 <div id="year-bar">
   <button class="yb-btn" id="yb-back" title="1 Jahr zurück · halten: 10, dann 100 Jahre">◂</button>
@@ -165,7 +165,7 @@ if(location.protocol==="file:"){
 <section id="page-panel" class="snap">
 <div id="panel-bar" data-action="scroll-to-sky"><span class="lg-title">🎛 Planetarium</span><button id="panel-close" data-action="scroll-to-sky" title="zurück zum Himmel">✕</button></div>
 <div id="panel-body">
-<div class="panel-sub">Simulierter Sternenhimmel · Tippen · Zoom · Karte<br>Version 11.22 · Build 20260814h · freigegeben</div>
+<div class="panel-sub">Simulierter Sternenhimmel · Tippen · Zoom · Karte<br>Version 11.26 · Build 20260815d · freigegeben</div>
 <div class="ctrls">
   <button class="btn on" id="ba" data-action="toggle-animation">⏸ Pause</button>
   <button class="btn" data-action="set-now">Jetzt</button>
@@ -245,7 +245,7 @@ if(location.protocol==="file:"){
   <div class="row"><label>🌍 Breite</label><input type="range" id="sLat" min="-90" max="90" step=".1" value="48" data-slider data-input-action="change-latitude"><span id="lLat">–</span></div>
   <div class="row"><label>🌐 Länge</label><input type="range" id="sLng" min="-180" max="180" step=".1" value="13" data-slider data-input-action="change-longitude"><span id="lLng">–</span></div>
   <div class="row"><label>⚡ Speed</label><input type="range" id="sSpd" min="0" max="1000" step="1" value="585" data-slider data-input-action="change-speed"><span id="lSpd">2.3min/s</span></div>
-  <div class="row"><label>🌌 Himmel</label><div style="display:flex;gap:.3rem;flex:1;flex-wrap:wrap"><button type="button" class="gear-btn" id="skyq-city" data-action="set-sky-quality" data-magnitude="4.5">Stadt 4,5<sup>m</sup></button><button type="button" class="gear-btn on" id="skyq-land" data-action="set-sky-quality" data-magnitude="5.5">Land 5,5<sup>m</sup></button><button type="button" class="gear-btn" id="skyq-dark" data-action="set-sky-quality" data-magnitude="6.5" title="Keine Grenzgröße; alle lokal vorhandenen Gaia-Stufen werden verwendet">dunkel · unbegrenzt</button><button type="button" class="gear-btn" id="skyq-parey" data-action="set-parey-profile" title="Sternenblick Parey, 52,678° N / 12,247° O">★ Sternenblick Parey</button><button type="button" class="gear-btn" id="gaia-btn" data-action="open-gaia-dialog" title="Echten Gaia-DR3-Sternkatalog laden oder Ladezustand anzeigen">✦ Gaia…</button><small id="skyq-auto-status" style="flex-basis:100%;opacity:.78">Automatisch nach Standort · Näherung anhand der Ortsliste</small></div></div>
+  <div class="row"><label>🌌 Himmel</label><div style="display:flex;gap:.3rem;flex:1;flex-wrap:wrap"><button type="button" class="gear-btn" id="skyq-city" data-action="set-sky-quality" data-magnitude="4.5">Stadt 4,5<sup>m</sup></button><button type="button" class="gear-btn on" id="skyq-land" data-action="set-sky-quality" data-magnitude="5.5">Land 5,5<sup>m</sup></button><button type="button" class="gear-btn" id="skyq-dark" data-action="set-sky-quality" data-magnitude="6.5" title="Keine Grenzgröße; alle lokal vorhandenen Gaia-Stufen werden verwendet">dunkel · unbegrenzt</button><button type="button" class="gear-btn" id="skyq-parey" data-action="set-parey-profile" title="Sternenblick Parey, 52,678° N / 12,247° O">★ Sternenblick Parey</button><button type="button" class="gear-btn" id="gaia-btn" data-action="open-gaia-dialog" title="Echten Gaia-DR3-Sternkatalog laden oder Ladezustand anzeigen">✦ Gaia…</button><label for="skyq-sqm" title="SQM-Wert der Lichtverschmutzungskarte in Magnituden pro Quadratbogensekunde">SQM</label><input id="skyq-sqm" type="number" min="10" max="24" step="0.01" inputmode="decimal" placeholder="z. B. 20,80" style="width:7.5rem"><a id="skyq-map-link" class="gear-btn" href="https://lightpollutionmap.app/de/" target="_blank" rel="noopener noreferrer" title="Aktuellen Standort in der Lichtverschmutzungskarte öffnen">Kartenwert öffnen ↗</a><small id="skyq-auto-status" style="flex-basis:100%;opacity:.78">Automatisch nach Standort · Näherung anhand der Ortsliste</small></div></div>
   <div class="row"><label>⏩ Gang</label><div style="display:flex;gap:.3rem;flex:1;flex-wrap:wrap"><button type="button" class="gear-btn" data-action="set-gear" data-gear="60">1 Min/s</button><button type="button" class="gear-btn" data-action="set-gear" data-gear="3600">1 Std/s</button><button type="button" class="gear-btn" data-action="set-gear" data-gear="86400">1 Tag/s</button><button type="button" class="gear-btn" data-action="set-gear" data-gear="year">1 Jahr/s</button></div></div>
   <div class="row"><label>🔤 Schrift</label><input type="range" id="sFont" min="60" max="180" step="5" value="100" data-slider data-input-action="change-font-scale"><span id="lFont">100%</span></div>
 </div>
@@ -470,7 +470,7 @@ if(location.protocol==="file:"){
     <button id="map-close" data-action="close-map">✕ Schließen</button>
   </div>
 </div>
-<script src="./src/legacy/01-core.js?v=20260814h" defer></script>
+<script src="./src/legacy/01-core.js?v=20260815d-jumps5" defer></script>
 <script src="./src/legacy/00-scheduler.js" defer></script>
 
 
@@ -516,6 +516,6 @@ if(location.protocol==="file:"){
 
 
 <script src="./src/legacy/14-didactic-focus.js?v=2" defer></script>
-<script type="module" src="./src/main.js?v=20260814h"></script>
+<script type="module" src="./src/main.js?v=20260815d-jumps6-sqm1"></script>
 </body>
 </html>
