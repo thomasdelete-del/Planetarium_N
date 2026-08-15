@@ -494,7 +494,10 @@ void main(){
   float faint=max(0.0,mag-6.5),lodFlux=mag>6.5?min(1.65,pow(stride,.22)):1.0;
   float telescope=u_real>.5?min(2.45,1.0+.62*log(max(1.0,u_lod.z))/log(2.0)):1.0;
   float alpha=mag<2.0?.98:mag<3.5?.88:mag<5.0?.68:mag<6.5?.48:max(.035,.30*pow(10.0,-.18*faint))*lodFlux*telescope;
-  float extinction=sinAlt<=0.0?0.0:pow(10.0,-.092*(1.0/max(.02,sinAlt)-1.0));
+  /* Im Lagemodus bleibt auch die gegenueberliegende Himmelshalbkugel sichtbar.
+     Wie in Build 20260809s bekommt sie eine gedimmte Ersatzhelligkeit, statt
+     entweder voll hell oder komplett unsichtbar zu werden. */
+  float extinction=sinAlt<=0.0?(u_allowBelow>.5?.55:0.0):pow(10.0,-.092*(1.0/max(.02,sinAlt)-1.0));
   v_alpha=alpha*extinction*u_night;
   float radius=mag<2.0?1.94:mag<3.5?1.63:mag<5.0?1.35:mag<6.5?1.13:max(.60,.90-.069*faint);
   gl_PointSize=max(1.0,2.0*radius*u_point);v_col=a_col;v_densityLayer=0.0;
@@ -529,7 +532,14 @@ function _gaiaGLDraw(kataloge,o){
     const L=_gaiaGL.loc,S=9*4,attr=(n,size,off)=>{gl.enableVertexAttribArray(L[n]);gl.vertexAttribPointer(L[n],size,gl.FLOAT,false,S,off*4)};
     gl.uniform3f(L.u_m0,o.M.m00,o.M.m01,o.M.m02);gl.uniform3f(L.u_m1,o.M.m10,o.M.m11,o.M.m12);gl.uniform3f(L.u_m2,o.M.m20,o.M.m21,o.M.m22);gl.uniform2f(L.u_lst,o.cosLST,o.sinLST);gl.uniform2f(L.u_phi,o.sinPhi,o.cosPhi);
     gl.uniform4f(L.u_view,o.panX,o.panY,o.twoOverPiR,o.rf2);gl.uniform4f(L.u_camera,o.rsA,o.rcA,o.rcc,o.rsc);gl.uniform4f(L.u_screen,o.ORX,o.ORY,cvW,cvH);gl.uniform4f(L.u_clip,o.vx0,o.vx1,o.vy0,o.vy1);gl.uniform4f(L.u_cull,o.cullX,o.cullY,o.cullZ,o.cullCos);gl.uniform3f(L.u_lod,o.lim,o.stride,o.zoom);gl.uniform1f(L.u_real,o.real?1:0);gl.uniform1f(L.u_allowBelow,o.allowBelow?1:0);gl.uniform1f(L.u_point,o.point);gl.uniform1f(L.u_night,o.night);
-    gl.enable(gl.BLEND);let gesamt=0;for(const e of eintraege){gl.blendFunc(gl.SRC_ALPHA,e.density?gl.ONE:gl.ONE_MINUS_SRC_ALPHA);gl.bindBuffer(gl.ARRAY_BUFFER,e.buffer);attr("a_pos",3,0);attr("a_mag",1,3);attr("a_col",3,4);attr("a_id",1,7);attr("a_density",1,8);gl.drawArrays(gl.POINTS,0,e.count);gesamt+=e.count}gl.flush();
+    gl.enable(gl.BLEND);let gesamt=0;for(const e of eintraege){gl.blendFunc(gl.SRC_ALPHA,e.density?gl.ONE:gl.ONE_MINUS_SRC_ALPHA);gl.bindBuffer(gl.ARRAY_BUFFER,e.buffer);attr("a_pos",3,0);attr("a_mag",1,3);attr("a_col",3,4);attr("a_id",1,7);attr("a_density",1,8);gl.drawArrays(gl.POINTS,0,e.count);gesamt+=e.count}
+    /* Im Lagemodus muessen Gaia, Sterne, Linien, Namen und Horizont denselben
+       Kamerastand zeigen. Die Gaia-Ebene ist ein separates WebGL-Canvas; ein
+       blosses flush() kann deshalb erst beim folgenden Browser-Compositing
+       sichtbar werden, waehrend das 2D-Canvas schon die neue Lage zeigt. Nur
+       hier warten wir auf den Abschluss des GPU-Bildes. Andere Modi behalten
+       den schnelleren asynchronen Pfad. */
+    if(orientMode)gl.finish();else gl.flush();
     _gaiaGL.count=gesamt;window.__gaiaGpuStatus={active:true,ready:true,count:gesamt,fallback:false};document.documentElement.dataset.gaiaGpu="active-"+gesamt;return true;
   }catch(e){console.warn("Gaia WebGL Render-Fallback:",e);_gaiaGLHide();_gaiaGL.failed=true;return false}
 }
@@ -1092,8 +1102,26 @@ function geoAlt(ra,dec){
   const dr=dec*Math.PI/180,phi=lat*Math.PI/180;
   return Math.asin(Math.sin(phi)*Math.sin(dr)+Math.cos(phi)*Math.cos(dr)*Math.cos(H))*180/Math.PI;
 }
+function drawFixedOrientationLabels(LScale){
+  const HW=(cvW||W)/2,HH=(cvH||W)/2;
+  const mark=(az,alt,label,color)=>{
+    const P=projReal(az,alt);
+    if(P.alt===-999||!isFinite(P.x)||!isFinite(P.y)||Math.abs(P.x)>HW-28*PX||Math.abs(P.y)>HH-28*PX)return;
+    g.save();
+    g.font=`700 ${Math.max(12*PX,14*PX*LScale)}px Inter,system-ui,sans-serif`;
+    g.textAlign="center";g.textBaseline="middle";
+    g.shadowColor="rgba(2,6,18,.98)";g.shadowBlur=6*PX;
+    g.fillStyle=color;
+    g.beginPath();g.arc(P.x,P.y,3.2*PX,0,Math.PI*2);g.fill();
+    g.fillText(label,P.x,P.y-14*PX);
+    g.restore();
+  };
+  mark(0,Math.PI/2,"Zenit","rgba(225,235,255,.92)");
+  mark(0,-Math.PI/2,"Nadir","rgba(170,190,220,.82)");
+  mark(Math.PI,lat*Math.PI/180,"N","rgba(225,235,255,.95)");
+}
 function drawGroundAndCompass(LScale){
-  if(!showGround)return;
+  if(!showGround){drawFixedOrientationLabels(LScale);return;}
   const HW=(cvW||W)/2,HH=(cvH||W)/2;
   const pts=[];
   for(let dA=-120;dA<=120;dA+=1.5){
@@ -1111,12 +1139,14 @@ function drawGroundAndCompass(LScale){
     g.lineTo(pts[pts.length-1].x,HH*4);
     g.lineTo(pts[0].x,HH*4);
     g.closePath();
+    /* Build 20260809s zeigte unter dem Horizont weiterhin den kompletten Himmel,
+       legte aber eine halbtransparente, blaugraue Bodenstimmung darueber. Dadurch
+       bleiben Sterne, Gaia, Linien und Namen sichtbar und wechseln zugleich klar
+       ihre Farbstimmung. Der Beobachtermodus bleibt wie bisher blickdicht. */
     const y0=pts[Math.floor(pts.length/2)].y;
     const gg=g.createLinearGradient(0,y0,0,y0+HH*1.2);
-    /* Nur im Lagemodus halbdurchsichtig, damit die Sterne unter dem Horizont
-        durchscheinen. Im gewoehnlichen Beobachtermodus bleibt der Boden blickdicht. */
-     if(orientMode){gg.addColorStop(0,"rgba(11,16,24,.40)");gg.addColorStop(.35,"rgba(7,10,17,.48)");gg.addColorStop(1,"rgba(4,6,10,.56)");}
-     else{gg.addColorStop(0,"#0b1018");gg.addColorStop(.35,"#070a11");gg.addColorStop(1,"#04060a");}
+    if(orientMode){gg.addColorStop(0,"rgba(11,16,24,.40)");gg.addColorStop(.35,"rgba(7,10,17,.48)");gg.addColorStop(1,"rgba(4,6,10,.56)");}
+    else{gg.addColorStop(0,"#0b1018");gg.addColorStop(.35,"#070a11");gg.addColorStop(1,"#04060a");}
     g.fillStyle=gg;g.fill();
     // weicher Horizontsaum - im Lagemodus deutlich kräftiger, damit über/unter dem Horizont klar erkennbar bleibt
     g.beginPath();g.moveTo(pts[0].x,pts[0].y);
@@ -1164,6 +1194,46 @@ function drawGroundAndCompass(LScale){
       }
     }
     g.restore();
+  }
+  drawFixedOrientationLabels(LScale);
+  /* Alte Randmarkierung deaktiviert: Orientierungspunkte werden ausschliesslich
+     an ihrer astronomisch projizierten Position gezeichnet. Zenit und Nadir
+     werden nur beschriftet, wenn ihre projizierte Position im Sichtfeld liegt.
+     Der geografische Nordpunkt am Horizont bleibt davon getrennt; "N" markiert
+     hier ausdrücklich den nördlichen Himmelspol auf der Höhe des Breitengrads. */
+  if(false){
+    const mark=(az,alt,text,col)=>{
+      const P=projReal(az,alt);
+      let x=P.x,y=P.y,edge=false;
+      if(P.alt===-999||!isFinite(x)||!isFinite(y)){
+        /* Auch Punkte hinter der Kamera erhalten eine eindeutige Richtung zum
+           Bildschirmrand. Dazu wird ihr Himmelsvektor in die Kamerabasis
+           projiziert, ohne die Vorwaerts-Halbkugel abzuschneiden. */
+        const ch=Math.cos(alt),sh=Math.sin(alt),px=Math.sin(az)*ch,py=Math.cos(az)*ch,pz=sh;
+        const Ac=camAz*Math.PI/180,hc=camAlt*Math.PI/180,cc=Math.cos(hc),sc=Math.sin(hc),sA=Math.sin(Ac),cA=Math.cos(Ac);
+        x=px*cA-py*sA;y=-(px*(-sA*sc)+py*(-cA*sc)+pz*cc);
+        if(Math.hypot(x,y)<1e-6)y=-1;
+        edge=true;
+      }
+      const limX=HW-48*PX,limY=HH-28*PX;
+      if(edge||Math.abs(x)>limX||Math.abs(y)>limY){
+        const k=Math.min(limX/Math.max(1e-6,Math.abs(x)),limY/Math.max(1e-6,Math.abs(y)));
+        x*=k;y*=k;edge=true;
+      }
+      g.save();
+      g.font=`700 ${Math.max(12*PX,14*PX*LScale)}px Inter,system-ui,sans-serif`;
+      g.textAlign="center";g.textBaseline="middle";
+      g.shadowColor="rgba(2,6,18,.98)";g.shadowBlur=6*PX;
+      g.fillStyle=col;g.fillText(edge?"◂ "+text+" ▸":text,x,y);
+      g.restore();
+      return !edge;
+    };
+    mark(0,Math.PI/2,"Zenit","rgba(225,235,255,.92)");
+    mark(0,-Math.PI/2,"Nadir","rgba(170,190,220,.78)");
+    const poleIsAlreadyDrawn=showRefCircles&&window.didHidePrec!==true&&window.didacticSimulationMode!=="solar-year";
+    const poleP=projReal(Math.PI,lat*Math.PI/180);
+    const poleInside=poleP.alt!==-999&&isFinite(poleP.x)&&isFinite(poleP.y)&&Math.abs(poleP.x)<=HW-48*PX&&Math.abs(poleP.y)<=HH-28*PX;
+    if(!poleIsAlreadyDrawn||!poleInside)mark(Math.PI,lat*Math.PI/180,"N","rgba(225,235,255,.95)");
   }
   // Kompass am Horizont (Azimut im Code von Sued gezaehlt)
   const CMP=[[0,"S"],[45,"SW"],[90,"W"],[135,"NW"],[180,"N"],[225,"NO"],[270,"O"],[315,"SO"]];
@@ -1231,7 +1301,37 @@ function moonBrightLimbAngle(mtopo,sunRD,HR,mP,jd0){
   }
   return _moonLimbCache.ang;
 }
-function draw(){if(!W)return;g.clearRect(0,0,cvW||W,cvH||W);clickable=[];window.__lblBoxes=[];ORX=(cvW||W)/2;ORY=(cvH||W)/2;g.save();g.translate(ORX,ORY);if(viewMode!=="real"){g.translate(panX,panY);g.scale(zoom,zoom);}const FS=document.body.classList.contains("fullscreen");const R=C*(FS?.998:.975);const HR=R*(showTwilight?.8:FS?.965:.94);/* Grenzen des sichtbaren Ausschnitts in Zeichenkoordinaten, einmal je Bild.
+let __orientDrawAz=null,__orientDrawAlt=null,__orientDrawFov=null,__orientDrawTS=0;
+/* Ein Szenensprung setzt Ort, Zeit, Projektion und Schalter teils in mehreren
+   zeitversetzten Schritten. Bis die Transaktion fertig ist, bleibt das letzte
+   vollstaendige Bild stehen; danach wird genau ein fertiges Bild gezeichnet. */
+let __atomicSkyUntil=0,__atomicSkyTimer=0;
+function beginAtomicSkyJump(ms){
+  const wait=Math.max(120,ms||380);
+  __atomicSkyUntil=Math.max(__atomicSkyUntil,performance.now()+wait);
+  clearTimeout(__atomicSkyTimer);
+  __atomicSkyTimer=setTimeout(function finishAtomicSkyJump(){
+    const rest=__atomicSkyUntil-performance.now();
+    if(rest>1){__atomicSkyTimer=setTimeout(finishAtomicSkyJump,rest+2);return}
+    __atomicSkyUntil=0;
+    if(W)requestAnimationFrame(()=>draw());
+  },wait+2);
+}
+window.__beginAtomicSkyJump=beginAtomicSkyJump;
+function __orientDrawNeeded(){
+  /* Die Kameratransformation des Lagemodus folgt wieder jedem RAF wie im
+     bewaehrten Build 20260809s. Andere Modi behalten ihre Drosselung. */
+  if(orientMode)return true;
+  const now=performance.now(),perf=window.__devicePerformanceProfile&&window.__devicePerformanceProfile.level;
+  const minMs=perf==="low"?24:16;
+  if(__orientDrawAz===null)return true;
+  if(now-__orientDrawTS<minMs)return false;
+  const da=orientAngDelta(camAz,__orientDrawAz)*Math.cos(camAlt*Math.PI/180),dh=camAlt-__orientDrawAlt;
+  const pixels=Math.hypot(da,dh)*Math.max(1,Math.min(cvW||W,cvH||W))/Math.max(20,camFov);
+  return pixels>=.10||Math.abs(camFov-__orientDrawFov)>.01;
+}
+function __orientDrawCommit(){__orientDrawAz=camAz;__orientDrawAlt=camAlt;__orientDrawFov=camFov;__orientDrawTS=performance.now()}
+function draw(){if(!W)return;if(__atomicSkyUntil>performance.now())return;if(orientMode&&!__orientDrawNeeded())return;if(orientMode)__orientDrawCommit();g.clearRect(0,0,cvW||W,cvH||W);clickable=[];window.__lblBoxes=[];ORX=(cvW||W)/2;ORY=(cvH||W)/2;g.save();g.translate(ORX,ORY);if(viewMode!=="real"){g.translate(panX,panY);g.scale(zoom,zoom);}const FS=document.body.classList.contains("fullscreen");const R=C*(FS?.998:.975);const HR=R*(showTwilight?.8:FS?.965:.94);/* Grenzen des sichtbaren Ausschnitts in Zeichenkoordinaten, einmal je Bild.
    In der Kuppelansicht ist die Flaeche mit zoom skaliert und um pan verschoben,
    in der Beobachteransicht nicht. Damit lassen sich Beschriftungen und Linien,
    die ohnehin ausserhalb liegen, verwerfen, bevor gezeichnet wird. */
@@ -1519,10 +1619,10 @@ function decCircle(decDeg){g.beginPath();let prev=null,started=false;const step=
      Dann wird der Linienzug sauber unterbrochen, statt in die Zwischenwertrechnung zu
      laufen — die ergaebe NaN und ein moveTo(NaN), was eine Strecke quer durchs Bild
      ziehen kann, die sich beim Schwenken mitbewegt. */if(!isFinite(a.x)||!isFinite(a.y)||!isFinite(b.x)||!isFinite(b.y)){started=false}else if(_altV(a.alt)>=0&&_altV(b.alt)>=0){if(!started){g.moveTo(a.x,a.y);started=true}g.lineTo(b.x,b.y)}else if(_altV(a.alt)>=0&&_altV(b.alt)<0){const t=a.alt/(a.alt-b.alt);const ix=a.x+(b.x-a.x)*t,iy=a.y+(b.y-a.y)*t;if(!started){g.moveTo(a.x,a.y);started=true}g.lineTo(ix,iy);started=false}else if(_altV(a.alt)<0&&_altV(b.alt)>=0){const t=-a.alt/(b.alt-a.alt);const ix=a.x+(b.x-a.x)*t,iy=a.y+(b.y-a.y)*t;g.moveTo(ix,iy);g.lineTo(b.x,b.y);started=true}}prev=cur}}if(showRefCircles&&!didConst){g.save();g.globalAlpha=Math.max(.45,nightF);g.setLineDash([5*PX/zoom,4*PX/zoom]);decCircle(0);g.strokeStyle="rgba(120,200,235,.6)";g.lineWidth=1.4*PX/zoom;g.stroke();const obl=oblR(jd0)*180/Math.PI;decCircle(obl);g.strokeStyle="rgba(255,190,90,.5)";g.lineWidth=1.2*PX/zoom;g.stroke();decCircle(-obl);g.strokeStyle="rgba(255,190,90,.5)";g.lineWidth=1.2*PX/zoom;g.stroke();const circDec=90-Math.abs(lat);if(circDec<90&&window.didHideCirc!==true){decCircle(lat>=0?circDec:-circDec);g.strokeStyle="rgba(150,230,170,.55)";g.lineWidth=1.3*PX/zoom;g.stroke()}g.setLineDash([]);if(!(window.didacticSimulationMode==='solar-year')&&window.didHidePrec!==true){/* Präzessionskreis: als J2000-Sternhimmelskreis berechnet und anschließend wie Sterne ins gewählte Jahr präzediert. */const eps=obl;const epRA=18*15,epDec=90-eps;const epDr=epDec*Math.PI/180,epRr=epRA*Math.PI/180,rr=eps*Math.PI/180;g.beginPath();let started=false,prev=null;for(let pa=0;pa<=360.5;pa+=2){const par=pa*Math.PI/180;const dec=Math.asin(Math.sin(epDr)*Math.cos(rr)+Math.cos(epDr)*Math.sin(rr)*Math.cos(par));const dRA=Math.atan2(Math.sin(par)*Math.sin(rr)*Math.cos(epDr),Math.cos(rr)-Math.sin(epDr)*Math.sin(dec));const ra=epRr+dRA;const raH=(ra*180/Math.PI%360+360)%360/15;const pc=precess(raH,dec*180/Math.PI,jd0);const P=altazXY(pc.ra,pc.dec,HR);const cur={x:P.x,y:P.y,alt:P.alt};if(prev){if(!isFinite(prev.x)||!isFinite(prev.y)||!isFinite(cur.x)||!isFinite(cur.y)){started=false}else if(_altV(prev.alt)>=0&&_altV(cur.alt)>=0){if(!started){g.moveTo(prev.x,prev.y);started=true}g.lineTo(cur.x,cur.y)}else if(_altV(prev.alt)>=0&&_altV(cur.alt)<0){const t=prev.alt/(prev.alt-cur.alt);if(!started){g.moveTo(prev.x,prev.y);started=true}g.lineTo(prev.x+(cur.x-prev.x)*t,prev.y+(cur.y-prev.y)*t);started=false}else if(_altV(prev.alt)<0&&_altV(cur.alt)>=0){const t=-prev.alt/(cur.alt-prev.alt);g.moveTo(prev.x+(cur.x-prev.x)*t,prev.y+(cur.y-prev.y)*t);g.lineTo(cur.x,cur.y);started=true}}prev=cur}g.strokeStyle="rgba(190,160,235,.5)";g.lineWidth=1.2*PX/zoom;g.stroke();/* Der Himmelsnordpol steht in der lokalen Horizontansicht immer im geografischen Norden auf Breitenhöhe. Die Präzession zeigt sich durch die verschobenen Sternkoordinaten, nicht durch einen wandernden Nordpunkt. */const Pole=altazXY(0,90,HR);if(Pole.alt>0){const pr=Math.max(4*PX,HR*.012)*LScale;g.save();g.strokeStyle="rgba(210,225,255,.85)";g.lineWidth=1.3*PX/zoom;g.beginPath();g.moveTo(Pole.x-pr,Pole.y);g.lineTo(Pole.x+pr,Pole.y);g.moveTo(Pole.x,Pole.y-pr);g.lineTo(Pole.x,Pole.y+pr);g.stroke();g.beginPath();g.arc(Pole.x,Pole.y,pr,0,Math.PI*2);g.strokeStyle="rgba(210,225,255,.6)";g.lineWidth=1*PX/zoom;g.stroke();g.font=`bold ${Math.max(13*PX,HR*.028)*LScale}px Cinzel,serif`;g.fillStyle="rgba(225,235,255,.95)";g.textAlign="center";g.textBaseline="middle";g.shadowColor="rgba(5,8,20,.95)";g.shadowBlur=5;g.fillText("N",Pole.x+pr*2.2,Pole.y-pr*1.2);if(showNames){g.font=`${Math.max(8*PX,HR*.015)*LScale}px Cinzel,serif`;g.fillStyle="rgba(210,225,255,.78)";g.fillText("Himmelsnordpol",Pole.x+pr*3.0,Pole.y+pr*1.4)}g.restore()}if(showNames){const pep=precess(epRA/15,epDec,jd0);const Pep=altazXY(pep.ra,pep.dec,HR);if(Pep.alt>2){g.save();g.font=`italic ${Math.max(9*PX,HR*.017)*LScale}px Cinzel,serif`;g.fillStyle="rgba(200,175,240,.75)";g.textAlign="center";g.shadowColor="rgba(5,4,12,.9)";g.shadowBlur=4;g.fillText("Präzessionskreis",Pep.x,Pep.y);g.restore()}}}if(showNames){g.font=`${Math.max(11*PX,HR*.02)*LScale}px Cinzel,serif`;g.textAlign="center";g.textBaseline="middle";const labelAt=(decDeg,txt,col)=>{const lstH=LST()/15;const P=altazXY(lstH,decDeg,HR);if(P.alt>2){g.save();g.globalAlpha=.7;g.shadowColor="rgba(5,8,20,.9)";g.shadowBlur=4;g.fillStyle=col;g.fillText(txt,P.x,P.y);g.restore()}};labelAt(0,"Himmelsäquator","rgba(150,210,240,.8)");labelAt(obl,"Wendekreis +"+obl.toFixed(1).replace(".",",")+"°","rgba(255,200,110,.75)");labelAt(-obl,"Wendekreis −"+obl.toFixed(1).replace(".",",")+"°","rgba(255,200,110,.75)");if(circDec<90&&window.didHideCirc!==true)labelAt(lat>=0?circDec:-circDec,"Zirkumpolar","rgba(160,235,180,.8)")}g.restore();if(!didConst&&window.didHideEcl!==true){const eclStep=Math.max(.3,1.5/Math.max(1,zoom*.6));/* Kurvenpunkte (Rektaszension/Deklination -> Bildschirm) einmal je Bild berechnen statt dreimal: die drei folgenden Striche (Schimmer, mittel, duenn) unterscheiden sich nur in Strichstaerke/Farbe, nicht in der Geometrie. */const _eclPts=[];for(let lon=0;lon<=361;lon+=eclStep){const rd=ecl2rd(lon,0,jd0);const P=altazXY(rd.ra,rd.dec,HR);_eclPts.push(_altAb(P.alt,-2)?null:P)}function eclPathReplay(){g.beginPath();let f=true;for(const P of _eclPts){if(P===null){f=true;continue}f?g.moveTo(P.x,P.y):g.lineTo(P.x,P.y);f=false}}eclPathReplay();g.strokeStyle="rgba(200,150,40,.08)";g.lineWidth=3.5*PX/zoom;g.lineCap="round";g.shadowColor="#aa8830";g.shadowBlur=4;g.stroke();g.shadowBlur=0;eclPathReplay();g.strokeStyle="rgba(190,150,55,.38)";g.lineWidth=1.4*PX/zoom;g.stroke();eclPathReplay();g.strokeStyle="rgba(205,170,90,.55)";g.lineWidth=.7*PX/zoom;g.stroke();g.lineCap="butt";{const Tn=(jd0-2451545)/36525;const Omega=((125.0445-1934.1362*Tn)%360+360)%360;const incl=5.145;const _mDist=(function(){try{return moonEcl(jd0).dist}catch(e){return 385000}})();const colN="rgba(175,215,255,",colS="rgba(110,160,235,";g.save();g.globalAlpha=Math.max(.4,nightF);let prev=null,prevBeta=0;const mbStep=Math.max(.25,1/Math.max(1,zoom*.6));for(let lon=0;lon<=361;lon+=mbStep){const u=(lon-Omega)*Math.PI/180;const beta=incl*Math.sin(u);const rd=ecl2rd(lon,beta,jd0);const P=altazXY(rd.ra,rd.dec,HR);if(_altAb(P.alt,-2)){prev=null;continue}if(prev){const north=beta+prevBeta>=0;const col=north?colN:colS;const a=north?1:.85;g.beginPath();g.moveTo(prev.x,prev.y);g.lineTo(P.x,P.y);g.strokeStyle=col+a+")";g.lineWidth=.7*PX/zoom;g.stroke()}prev=P;prevBeta=beta}[Omega,(Omega+180)%360].forEach((nodeLon,i)=>{const rd=ecl2rd(nodeLon,0,jd0);const P=altazXY(rd.ra,rd.dec,HR);if(P.alt>=-2){g.beginPath();g.arc(P.x,P.y,2.4*PX/zoom,0,Math.PI*2);g.strokeStyle=i===0?"rgba(180,215,255,.85)":"rgba(140,180,235,.8)";g.lineWidth=1.2*PX/zoom;g.stroke();if(showNames){g.font=`${Math.max(13*PX,HR*.026)*LScale}px serif`;g.fillStyle=i===0?"rgba(190,220,255,.95)":"rgba(150,190,240,.9)";g.textAlign="center";g.textBaseline="middle";g.save();g.shadowColor="rgba(5,8,20,.95)";g.shadowBlur=4;g.fillText(i===0?"☊":"☋",P.x,P.y-HR*.028*LScale);g.restore()}}});g.restore()}}}if((showZodiac||window.__zodiacOn)&&!didConst){window.__drawingZodiac=true;const _prevUnify=window.__V9_UNIFY_LABELS;window.__V9_UNIFY_LABELS=false;if(!(showRefCircles&&window.didHideEcl!==true)){/* Kurve nur zeichnen, wenn der showRefCircles-Block sie nicht schon gezeichnet hat - sonst lag die Ekliptik zweifach uebereinander (gleiche Formel, gleiche Farbe). */const eclStepZ=Math.max(.3,1.5/Math.max(1,zoom*.6));const _eclPtsZ=[];for(let lon=0;lon<=361;lon+=eclStepZ){const rd=ecl2rd(lon,0,jd0);const P=altazXY(rd.ra,rd.dec,HR);_eclPtsZ.push(_altAb(P.alt,-2)?null:P)}const eclPathZReplay=()=>{g.beginPath();let f=true;for(const P of _eclPtsZ){if(P===null){f=true;continue}f?g.moveTo(P.x,P.y):g.lineTo(P.x,P.y);f=false}};eclPathZReplay();g.strokeStyle="rgba(200,150,40,.08)";g.lineWidth=3.5*PX/zoom;g.lineCap="round";g.shadowColor="#aa8830";g.shadowBlur=4;g.stroke();g.shadowBlur=0;eclPathZReplay();g.strokeStyle="rgba(190,150,55,.38)";g.lineWidth=1.4*PX/zoom;g.stroke();eclPathZReplay();g.strokeStyle="rgba(205,170,90,.55)";g.lineWidth=.7*PX/zoom;g.stroke();g.lineCap="butt"}const ZNAME=["Widder","Stier","Zwillinge","Krebs","Löwe","Jungfrau","Waage","Skorpion","Schütze","Steinbock","Wassermann","Fische"];g.font=`italic ${Math.max(11*PX,HR*.026)*LScale}px Cinzel,serif`;g.textAlign="center";g.textBaseline="middle";for(let i=0;i<12;i++){const lon=i*30+15;const rd=ecl2rd(lon,0,jd0);const P=altazXY(rd.ra,rd.dec,HR);if(_altAb(P.alt,2))continue;const rdA=ecl2rd(lon-3,0,jd0),rdB=ecl2rd(lon+3,0,jd0);const PA=altazXY(rdA.ra,rdA.dec,HR),PB=altazXY(rdB.ra,rdB.dec,HR);let ang=Math.atan2(PB.y-PA.y,PB.x-PA.x);if(ang>Math.PI/2)ang-=Math.PI;else if(ang<-Math.PI/2)ang+=Math.PI;g.save();g.globalAlpha=Math.max(.5,nightF*.9);g.translate(P.x,P.y);g.rotate(ang);g.shadowColor="rgba(5,4,12,.95)";g.shadowBlur=4;g.fillStyle="rgba(235,205,135,.92)";g.fillText(ZNAME[i],0,-HR*.022/zoom);g.restore()}{g.font=`${Math.max(12*PX,HR*.022)*LScale}px Cinzel,serif`;g.textAlign="center";g.textBaseline="middle";ZCON.forEach(zc=>{const pc=precYearCache(zc,zc[1],zc[2],jd0);const P=altazXY(pc.ra,pc.dec,HR);if(_altAb(P.alt,3))return;if(!_imBild(P.x,P.y))return;g.save();g.shadowColor="rgba(5,8,20,.95)";g.shadowBlur=6;g.fillStyle="rgba(150,195,255,.85)";g.fillText(zc[0],P.x,P.y);g.restore()})}window.__V9_UNIFY_LABELS=_prevUnify;window.__drawingZodiac=false;}if(showLines){g.globalAlpha=nightF;Object.entries(LINES).forEach(([ck,ls])=>{if(didConst&&ck!==focusConstellation)return;ls.forEach(([a,b])=>{const sa=SM[a],sb=SM[b];if(!sa||!sb)return;const pa=starPC(sa,jd0),pb=starPC(sb,jd0);const PA=altazXY(pa.ra,pa.dec,HR),PB=altazXY(pb.ra,pb.dec,HR);if(!_altOK(PA.alt)||!_altOK(PB.alt))return;if(_streckeDraussen(PA.x,PA.y,PB.x,PB.y))return;g.beginPath();g.moveTo(PA.x,PA.y);g.lineTo(PB.x,PB.y);g.strokeStyle=didConst?"rgba(190,215,255,.52)":"rgba(120,175,255,.5)";g.lineWidth=(didConst?Math.max(1.2,1.9*PX):Math.max(1.2,1.7*PX))/zoom;g.stroke()})});if(!didConst)Object.entries(LINES2).forEach(([,segs])=>{segs.forEach(([ra1,de1,ra2,de2])=>{const pa=precess(ra1,de1,jd0),pb=precess(ra2,de2,jd0);const PA=altazXY(pa.ra,pa.dec,HR),PB=altazXY(pb.ra,pb.dec,HR);if(!_altOK(PA.alt)||!_altOK(PB.alt))return;if(_streckeDraussen(PA.x,PA.y,PB.x,PB.y))return;g.beginPath();g.moveTo(PA.x,PA.y);g.lineTo(PB.x,PB.y);g.strokeStyle="rgba(120,175,255,.42)";g.lineWidth=Math.max(1,1.4*PX)/zoom;g.stroke()})});g.globalAlpha=1}const magLimit=5.6+(zEff-1)*.28;let dayLimMag=-99;let daySkyMag=22;const sunFactor=Math.max(0,Math.min(1,(sunP.alt+6)/18));if(sunFactor>0){const H_scale=6e3,p0=1013;const hAlt=(Math.max(1,Math.min(10,zEff))-1)/9*1e5;const pRatio=Math.exp(-hAlt/H_scale);const Lratio=Math.pow(10,(22-4)/2.5);const Llin=1+(Lratio-1)*pRatio*sunFactor;daySkyMag=22-2.5*Math.log10(Llin);dayLimMag=daySkyMag-4.5}STARS.forEach(s=>{const pc=starPC(s,jd0);const P=altazXY(pc.ra,pc.dec,HR);if(!_altOK(P.alt))return;if(!_imBild(P.x,P.y))return;const mag=s.mag,[cr,cg,cb]=sCol(s.n);const focusStar=didConst&&s.c===focusConstellation;if(!focusStar&&mag>magLimit)return;const mClamp=Math.min(6.2,Math.max(-1.5,mag)),orientStyle=orientMode?orientStarStyle(mag,PX/zoom):null;let r=orientStyle?orientStyle.rad:Math.max(.55,.75+.2*(3.5-Math.min(3.5,mClamp)))*PX/zoom;if(focusStar)r*=1.85;let glowR=orientStyle?orientStyle.glow:(mClamp<3.8?1.4+.95*(3.8-mClamp):0)*PX/zoom;if(focusStar)glowR=Math.max(glowR,3.6*PX/zoom);const baseOp=orientStyle?orientStyle.op:mag<0?1:mag<1?.96:mag<2?.9:mag<3?.8:mag<4?.7:mag<4.5?.6:.52;const eclContrib=mag<1.5?eclBrightStars*(mag<0?.9:mag<1?.7:.45):0;let dayContrib=0;{const sfSoft=Math.max(0,Math.min(1,(sunP.alt+18)/30));if(sfSoft>0){const Lratio=Math.pow(10,(22-4)/2.5);const hAlt=(Math.max(1,Math.min(10,zEff))-1)/9*1e5;const pRatio=Math.exp(-hAlt/6e3);const Llin=1+(Lratio-1)*pRatio*sfSoft;const limSoft=22-2.5*Math.log10(Llin)-4.5;if(mag<limSoft){const above=limSoft-mag;let vis=Math.max(0,Math.min(1,above/1.5));const altR=Math.max(2,P.alt)*Math.PI/180;const airmass=1/Math.sin(altR);const extMag=.145*airmass*Math.exp(-hAlt/6e3);const extF=Math.pow(10,-.4*extMag);dayContrib=vis*extF}}}const effF=Math.max(nightF,eclContrib,dayContrib);const sinA=Math.sin(P.alt*Math.PI/180);/* Unter dem Horizont liefert die Abschwaechung durch die Lufthuelle null; im Lagemodus
-        werden Sterne unter dem realen Horizont nicht eingeblendet. */let op=Math.min(1,baseOp*effF)*(sinA>0?extBySinAlt(sinA):orientMode?0:.55);if(focusStar)op=Math.max(op,.95);if(op<.02)return;const rc=reddenRGB(cr,cg,cb,sinA),cr2=rc[0],cg2=rc[1],cb2=rc[2];if(glowR>.6){const gr=g.createRadialGradient(P.x,P.y,0,P.x,P.y,glowR);gr.addColorStop(0,`rgba(${cr2},${cg2},${cb2},${(op*.38).toFixed(3)})`);gr.addColorStop(.45,`rgba(${cr2},${cg2},${cb2},${(op*.13).toFixed(3)})`);gr.addColorStop(1,`rgba(${cr2},${cg2},${cb2},0)`);g.beginPath();g.arc(P.x,P.y,glowR,0,Math.PI*2);g.fillStyle=gr;g.fill()}g.beginPath();g.arc(P.x,P.y,r,0,Math.PI*2);g.fillStyle=`rgb(${cr2},${cg2},${cb2})`;g.globalAlpha=op;g.fill();g.globalAlpha=1;if(focusStar){g.beginPath();g.arc(P.x,P.y,r*2.25,0,Math.PI*2);g.strokeStyle="rgba(230,245,255,.26)";g.lineWidth=Math.max(.55,.8*PX)/zoom;g.stroke()}/* Im Beobachtermodus zeigt der kleinere Ausschnitt weniger Sterne zugleich. Dort
+        verwendet Build 20260809s eine gedimmte Ersatzhelligkeit. */let op=Math.min(1,baseOp*effF)*(sinA>0?extBySinAlt(sinA):.55);if(focusStar)op=Math.max(op,.95);if(op<.02)return;const rc=reddenRGB(cr,cg,cb,sinA),cr2=rc[0],cg2=rc[1],cb2=rc[2];if(glowR>.6){const gr=g.createRadialGradient(P.x,P.y,0,P.x,P.y,glowR);gr.addColorStop(0,`rgba(${cr2},${cg2},${cb2},${(op*.38).toFixed(3)})`);gr.addColorStop(.45,`rgba(${cr2},${cg2},${cb2},${(op*.13).toFixed(3)})`);gr.addColorStop(1,`rgba(${cr2},${cg2},${cb2},0)`);g.beginPath();g.arc(P.x,P.y,glowR,0,Math.PI*2);g.fillStyle=gr;g.fill()}g.beginPath();g.arc(P.x,P.y,r,0,Math.PI*2);g.fillStyle=`rgb(${cr2},${cg2},${cb2})`;g.globalAlpha=op;g.fill();g.globalAlpha=1;if(focusStar){g.beginPath();g.arc(P.x,P.y,r*2.25,0,Math.PI*2);g.strokeStyle="rgba(230,245,255,.26)";g.lineWidth=Math.max(.55,.8*PX)/zoom;g.stroke()}/* Im Beobachtermodus zeigt der kleinere Ausschnitt weniger Sterne zugleich. Dort
         koennen deshalb die Namen bis mindestens 3,4 mag eingeblendet werden. Mit wachsender
         Vergroesserung steigt die Grenze behutsam bis 4,0 mag. Lagemodus und Kuppel behalten
-        die bisherige Grenze 1,8 mag. */const starNameLimit=viewMode==="real"?Math.min(4,3.4+.3*Math.log2(Math.max(1,zEff))):1.8;if(((showNames&&(mag<starNameLimit||s.n==="Polaris"))||focusStar)&&s.n){g.globalAlpha=focusStar?1:Math.max(.35,nightF*.8);setBodyLabelStyle("star");g.textAlign="left";g.textBaseline="middle";g.fillText(s.n==="Polaris"?"Polarstern":s.n,P.x+r+2*PX/zoom,P.y);g.globalAlpha=1}if(s.n)clickable.push({sx:ORX+panX+zoom*P.x,sy:ORY+panY+zoom*P.y,type:"star",name:s.n,mag:s.mag,con:s.c,alt:P.alt,ra:s.ra,de:s.de})});if(BSC.length){if(bscPrecTargetYear!==simYear){bscPrecTargetYear=simYear;bscPrecCursor=0}if(bscPrecCursor<BSC.length&&!(typeof interacting!=="undefined"&&interacting>0)&&!_tierJob){const CHUNK=12000;const end=Math.min(BSC.length,bscPrecCursor+CHUNK);for(let i=bscPrecCursor;i<end;i++){const pc=precess(BSC[i].ra,BSC[i].de,jd0);BSC[i].pra=pc.ra;BSC[i].pde=pc.dec}bscPrecCursor=end;if(bscPrecCursor>=BSC.length){bscPrecYear=simYear;lastBscPrec=performance.now()}}if(_GAIA){if(gaiaPrecTargetYear!==simYear){gaiaPrecTargetYear=simYear;gaiaPrecCursor=0}if(gaiaPrecCursor<_GAIA.N&&!(typeof interacting!=="undefined"&&interacting>0)&&!_tierJob){const G=_GAIA;const CHUNKG=12000;const end=Math.min(G.N,gaiaPrecCursor+CHUNKG);const _gmC=_vondrak(jd0);for(let i=gaiaPrecCursor;i<end;i++){const ra0=G.ra[i]*(360/4294967296)/15,de0=G.de[i]*(90/2147483648);const r0=ra0*.2617993877991494,d0=de0*.017453292519943295,cd=Math.cos(d0);const x0=cd*Math.cos(r0),y0=cd*Math.sin(r0),z0=Math.sin(d0);const xd=_gmC.m00*x0+_gmC.m01*y0+_gmC.m02*z0;const yd=_gmC.m10*x0+_gmC.m11*y0+_gmC.m12*z0;const zd=_gmC.m20*x0+_gmC.m21*y0+_gmC.m22*z0;G.ex[i]=xd;G.ey[i]=yd;G.ez[i]=zd}gaiaPrecCursor=end}}let bgLimit=Math.min(15.5,_gaiaGrenzmag(zEff));if(interacting>0&&!_GAIA)bgLimit=Math.min(bgLimit,8);if(_GAIA)bgLimit=Math.min(bgLimit,_GAIA.magMax+.05);const rbg=1.25*PX/zoom;const lstDeg=LST(),phi=lat*Math.PI/180,sinPhi=Math.sin(phi),cosPhi=Math.cos(phi);const _lstR=lstDeg*Math.PI/180,cosLST=Math.cos(_lstR),sinLST=Math.sin(_lstR);const twoOverPiR=HR/(Math.PI/2);const _rm=(viewMode==="real"),_rAc=camAz*Math.PI/180,_rHc=camAlt*Math.PI/180,_rcc=Math.cos(_rHc),_rsc=Math.sin(_rHc),_rsA=Math.sin(_rAc),_rcA=Math.cos(_rAc),_rf2=(Math.min(cvW||W,cvH||W))/2/Math.tan(camFov*Math.PI/720);const margin=20*PX;const vx0=(-ORX-panX-margin)/zoom,vx1=((cvW||W)-ORX-panX+margin)/zoom;const vy0=(-ORY-panY-margin)/zoom,vy1=((cvH||W)-ORY-panY+margin)/zoom;/* Sichtkegel: Mittelrichtung und Winkelradius des Bildausschnitts, einmal je Bild.
+        die bisherige Grenze 1,8 mag. */const starNameLimit=viewMode==="real"?Math.min(4,3.4+.3*Math.log2(Math.max(1,zEff))):orientMode?5:1.8;if(((showNames&&(mag<starNameLimit||s.n==="Polaris"))||focusStar)&&s.n){g.globalAlpha=focusStar?1:Math.max(.35,nightF*.8);setBodyLabelStyle("star");g.textAlign="left";g.textBaseline="middle";g.fillText(s.n==="Polaris"?"Polarstern":s.n,P.x+r+2*PX/zoom,P.y);g.globalAlpha=1}if(s.n)clickable.push({sx:ORX+panX+zoom*P.x,sy:ORY+panY+zoom*P.y,type:"star",name:s.n,mag:s.mag,con:s.c,alt:P.alt,ra:s.ra,de:s.de})});if(BSC.length){if(bscPrecTargetYear!==simYear){bscPrecTargetYear=simYear;bscPrecCursor=0}if(bscPrecCursor<BSC.length&&!(typeof interacting!=="undefined"&&interacting>0)&&!_tierJob){const CHUNK=12000;const end=Math.min(BSC.length,bscPrecCursor+CHUNK);for(let i=bscPrecCursor;i<end;i++){const pc=precess(BSC[i].ra,BSC[i].de,jd0);BSC[i].pra=pc.ra;BSC[i].pde=pc.dec}bscPrecCursor=end;if(bscPrecCursor>=BSC.length){bscPrecYear=simYear;lastBscPrec=performance.now()}}if(_GAIA){if(gaiaPrecTargetYear!==simYear){gaiaPrecTargetYear=simYear;gaiaPrecCursor=0}if(gaiaPrecCursor<_GAIA.N&&!(typeof interacting!=="undefined"&&interacting>0)&&!_tierJob){const G=_GAIA;const CHUNKG=12000;const end=Math.min(G.N,gaiaPrecCursor+CHUNKG);const _gmC=_vondrak(jd0);for(let i=gaiaPrecCursor;i<end;i++){const ra0=G.ra[i]*(360/4294967296)/15,de0=G.de[i]*(90/2147483648);const r0=ra0*.2617993877991494,d0=de0*.017453292519943295,cd=Math.cos(d0);const x0=cd*Math.cos(r0),y0=cd*Math.sin(r0),z0=Math.sin(d0);const xd=_gmC.m00*x0+_gmC.m01*y0+_gmC.m02*z0;const yd=_gmC.m10*x0+_gmC.m11*y0+_gmC.m12*z0;const zd=_gmC.m20*x0+_gmC.m21*y0+_gmC.m22*z0;G.ex[i]=xd;G.ey[i]=yd;G.ez[i]=zd}gaiaPrecCursor=end}}let bgLimit=Math.min(15.5,_gaiaGrenzmag(zEff));if(interacting>0&&!_GAIA)bgLimit=Math.min(bgLimit,8);if(_GAIA)bgLimit=Math.min(bgLimit,_GAIA.magMax+.05);const rbg=1.25*PX/zoom;const lstDeg=LST(),phi=lat*Math.PI/180,sinPhi=Math.sin(phi),cosPhi=Math.cos(phi);const _lstR=lstDeg*Math.PI/180,cosLST=Math.cos(_lstR),sinLST=Math.sin(_lstR);const twoOverPiR=HR/(Math.PI/2);const _rm=(viewMode==="real"),_rAc=camAz*Math.PI/180,_rHc=camAlt*Math.PI/180,_rcc=Math.cos(_rHc),_rsc=Math.sin(_rHc),_rsA=Math.sin(_rAc),_rcA=Math.cos(_rAc),_rf2=(Math.min(cvW||W,cvH||W))/2/Math.tan(camFov*Math.PI/720);const margin=20*PX;const vx0=(-ORX-panX-margin)/zoom,vx1=((cvW||W)-ORX-panX+margin)/zoom;const vy0=(-ORY-panY-margin)/zoom,vy1=((cvH||W)-ORY-panY+margin)/zoom;/* Sichtkegel: Mittelrichtung und Winkelradius des Bildausschnitts, einmal je Bild.
    Damit lässt sich jeder Stern mit einem Skalarprodukt verwerfen, bevor Zenitdistanz,
    Wurzel und Bildlage überhaupt gerechnet werden. Der Radius ist bewusst großzügig:
    In der abstandstreuen Kuppelabbildung ist der ebene Abstand nie kleiner als der
@@ -1545,7 +1645,7 @@ let _cullX=0,_cullY=0,_cullZ=0,_cullCos=-2;{let _cAlt,_cAz,_angR;
    uebernehmen sukzessive die vollstaendigen Sichtfeldkacheln. */
 /* Im Beobachtermodus zeichnet WebGL dieselben vorbereiteten Dichtevektoren.
    Canvas 2D bleibt ausschliesslich als Kompatibilitaets- und Lagemoduspfad. */
-const _gaiaDichteGpuMoeglich=!orientMode&&_gaiaGLInit();
+const _gaiaDichteGpuMoeglich=_gaiaGLInit();
 if(_gaiaDichte&&_gaiaDichte.sample&&!_gaiaDichteGpuMoeglich&&(window.skyMagBase||6.5)>=6.49&&nightF>.18&&!(typeof interacting!=="undefined"&&interacting>0)){
   const fade=Math.max(0,Math.min(1,(3.4-zEff)/2.4));
   if(fade>.01){
@@ -1742,7 +1842,7 @@ if(op!==curOp){g.globalAlpha=op;curOp=op}if(rad<1.1||rad<=rbg*.96){g.fillRect(x-
         Math.max(.035,.30*Math.pow(10,-.18*faint))*lodFlux*telescopeGain;
       const rad=orientStyle?orientStyle.rad:mag<2?rbg*1.55:mag<3.5?rbg*1.30:mag<5?rbg*1.08:
         mag<6.5?rbg*.90:rbg*Math.max(_rm?.48:.36,.72-.055*faint);
-      const op=orientMode?baseOp*nightF*(sinAlt>0?extBySinAlt(sinAlt):0):Math.round(baseOp*nightF*(sinAlt>0?extBySinAlt(sinAlt):.55)*50)/50;
+      const op=orientMode?baseOp*nightF*(sinAlt>0?extBySinAlt(sinAlt):.55):Math.round(baseOp*nightF*(sinAlt>0?extBySinAlt(sinAlt):.55)*50)/50;
       if(op<.03)continue;
       if(op!==curOp){g.globalAlpha=op;curOp=op}
       if(G.fb){const colorBin=Math.min(31,G.fb[i]>>3);if(colorBin!==curColor){g.fillStyle=_gaiaColorLut[colorBin];curColor=colorBin}}
@@ -1779,13 +1879,13 @@ if(op!==curOp){g.globalAlpha=op;curOp=op}if(rad<1.1||rad<=rbg*.96){g.fillRect(x-
   const _gaiaGpuLimit=Math.min(bgLimit,6.8+Math.max(0,Math.log2(Math.max(1,zEff)))*2.4);
   const _gaiaGpuTief=new Map(),_gaiaGpuKataloge=_GAIA?[_GAIA]:[];
   if(!_gaiaFast){const gesehen=new Set();for(const zk of _sichtZellen){const tief=_gaiaStreamFuerZelle(zk);if(tief){_gaiaGpuTief.set(zk,tief);if(!gesehen.has(tief)){gesehen.add(tief);_gaiaGpuKataloge.push(tief)}}}}
-  if(orientMode||!_GAIA)_gaiaGLHide();
+  if(!_GAIA)_gaiaGLHide();
   /* Eine reine Vertikalgeste darf die teure Gaia-Projektion waehrend des
      Ziehens auslassen. Alle anderen Ebenen werden trotzdem normal gezeichnet.
      Erst beim Loslassen wird Gaia fuer den endgueltigen Ausschnitt erneuert. */
   const _gaiaGpuHold=window.__gaiaVerticalPan===true&&_gaiaGL.canvas&&_gaiaGL.canvas.style.display!=="none"&&_gaiaGL.count>0;
   const _gaiaGpuDensity=_gaiaDichteGpuMoeglich&&_gaiaDichte&&(window.skyMagBase||6.5)>=6.49&&nightF>.18&&!_gaiaFast?_gaiaDichte:null;
-  const _gaiaGpuBase=!orientMode&&!!_GAIA&&(_gaiaGpuHold||_gaiaGLDraw(_gaiaGpuKataloge,{M:_gM,cosLST,sinLST,sinPhi,cosPhi,
+  const _gaiaGpuBase=!!_GAIA&&(_gaiaGpuHold||_gaiaGLDraw(_gaiaGpuKataloge,{M:_gM,cosLST,sinLST,sinPhi,cosPhi,
     panX,panY,twoOverPiR,rf2:_rf2,rsA:_rsA,rcA:_rcA,rcc:_rcc,rsc:_rsc,ORX,ORY,
     vx0,vx1,vy0,vy1,cullX:_cullX,cullY:_cullY,cullZ:_cullZ,cullCos:_cullCos,lim:_gaiaGpuLimit,stride:_gaiaLODStride,zoom:zEff,real:_rm,
     allowBelow:_rm&&orientMode,night:nightF,point:_rm?rbg:1.25*PX,density:_gaiaGpuDensity}));
@@ -2322,7 +2422,7 @@ function eclBoxAuto(){
     }
   }catch(e){}
 }
-function jumpToEclipse(dir,type){window.__lastJumpId="eclipse-"+type;window.__eclZu=false;let jd=_eclipseVorgabeJD??findEclipse(dir,type),finOrt=null;_eclipseVorgabeJD=null;
+function jumpToEclipse(dir,type){beginAtomicSkyJump(420);window.__lastJumpId="eclipse-"+type;window.__eclZu=false;let jd=_eclipseVorgabeJD??findEclipse(dir,type),finOrt=null;_eclipseVorgabeJD=null;
   if(jd===null){alert("Keine Finsternis gefunden.");return}
   if(type==="solar"){
     try{
@@ -2557,6 +2657,7 @@ function openCoords(){
     setTimeout(()=>{try{il.focus();il.select()}catch(e){}},60);}
 }function togDST(){const p=utcOff;dstOffset=dstOffset===0?1:0;utcOff=utcBase+dstOffset;simMin+=(utcOff-p)*60;if(simMin<0)simMin+=1440;if(simMin>=1440)simMin-=1440;document.getElementById("sTime").value=Math.round(simMin);const b=document.getElementById("btn-dst");b.textContent=dstOffset?"☀ MESZ":"☀ MEZ";b.classList.toggle("on",dstOffset===1);updLabels()}function lastSunday(year,month){const d=new Date(Date.UTC(year,month+1,0));return d.getUTCDate()-d.getUTCDay()}function euDSTactive(year,doy){const mar=lastSunday(year,2),oct=lastSunday(year,9);const md=monthDays(year);let marDoy=mar;for(let i=0;i<2;i++)marDoy+=md[i];let octDoy=oct;for(let i=0;i<9;i++)octDoy+=md[i];return doy>=marDoy&&doy<octDoy}function autoDetectDST(){const inEU=lng>=-10&&lng<=40&&lat>=34&&lat<=72;applyDST(inEU&&euDSTactive(simYear,simDay))}function updateTimezone(){utcBase=tzFromLng(lng);autoDetectDST();utcOff=utcBase+dstOffset}function applyDST(active){dstOffset=active?1:0;utcOff=utcBase+dstOffset;const b=document.getElementById("btn-dst");if(b){b.textContent=dstOffset?"☀ MESZ":"☀ MEZ";b.classList.toggle("on",dstOffset===1)}}function applyGPSResult(la,lo,label){lat=la;lng=lo;selCity=null;document.querySelectorAll(".cbtn").forEach(b=>b.classList.remove("sel"));const il=document.getElementById("i-lat"),ig=document.getElementById("i-lng"),sl=document.getElementById("sLat");if(il)il.value=lat.toFixed(4);if(ig)ig.value=lng.toFixed(4);if(sl)sl.value=Math.max(-90,Math.min(90,Math.round(lat)));updateLocDisp(label||null,lat,lng);updateTimezone();updLabels();if(W)draw()}const IP_PROVIDERS=[{url:"https://ipwho.is/",parse:d=>d&&d.success!==false&&d.latitude!=null?{lat:+d.latitude,lng:+d.longitude,name:d.city||d.region||d.country}:null},{url:"https://ipapi.co/json/",parse:d=>d&&!d.error&&d.latitude!=null?{lat:+d.latitude,lng:+d.longitude,name:d.city||d.region||d.country_name}:null},{url:"https://get.geojs.io/v1/ip/geo.json",parse:d=>d&&d.latitude!=null?{lat:+d.latitude,lng:+d.longitude,name:d.city||d.region||d.country}:null},{url:"https://freeipapi.com/api/json",parse:d=>d&&d.latitude!=null?{lat:+d.latitude,lng:+d.longitude,name:d.cityName||d.regionName||d.countryName}:null}];function getLocationByIP(setMsg){setMsg=setMsg||function(){};setMsg("Standort über Internet wird ermittelt…");let i=0;const tryNext=()=>{if(i>=IP_PROVIDERS.length){setMsg("Standort nicht ermittelbar (kein Internet?). Bitte Stadt manuell wählen.");return}const p=IP_PROVIDERS[i++];fetch(p.url,{cache:"no-store"}).then(r=>r.ok?r.json():Promise.reject()).then(d=>{const res=p.parse(d);if(res&&isFinite(res.lat)&&isFinite(res.lng)&&!(res.lat===0&&res.lng===0)){applyGPSResult(res.lat,res.lng,res.name||null);setMsg(`✓ Standort (per Internet): ${res.name?res.name+" ":""}(${res.lat.toFixed(2)}°, ${res.lng.toFixed(2)}°)`)}else{tryNext()}}).catch(()=>tryNext())};tryNext()}function getGPS(){const st=document.getElementById("gps-st");const setMsg=m=>{if(st)st.textContent=m;showToast(m)};setMsg("Standort wird ermittelt…");if(!navigator.geolocation){getLocationByIP(setMsg);return}navigator.geolocation.getCurrentPosition(pos=>{applyGPSResult(pos.coords.latitude,pos.coords.longitude,null);setMsg(`✓ GPS-Standort: ${pos.coords.latitude.toFixed(3)}°, ${pos.coords.longitude.toFixed(3)}°`)},err=>{getLocationByIP(setMsg)},{timeout:1e4,enableHighAccuracy:false,maximumAge:6e5})}document.addEventListener("click",e=>{const w=document.getElementById("loc-wrap");if(!w.contains(e.target))document.getElementById("loc-panel").classList.remove("open")});function doyFromMonthDay(y,m,d){const md=monthDays(y);let n=d;for(let i=0;i<m-1;i++)n+=md[i];return n}
 function setScene(la,lo,month,day,minute,label,year){
+  beginAtomicSkyJump(380);
   window.__pendingRunSpeed=null;
   focusConstellation=null;
   if(typeof window.setYearPlay==="function")window.setYearPlay(false);
@@ -2575,7 +2676,7 @@ function setScene(la,lo,month,day,minute,label,year){
   zoom=1;panX=0;panY=0;zoomedObj=null;interacting=8;if(typeof updateTouchMode==="function")updateTouchMode();
   if(typeof window.setYearPlay==="function")window.setYearPlay(false);scrollToSky();setTimeout(()=>{if(W)draw()},220);
 }
-function jumpEclipse(dir,type){if(typeof window.setYearPlay==="function")window.setYearPlay(false);var __repeat=(window.__lastEclipse===dir+"|"+type);window.__lastEclipse=dir+"|"+type;if(!__repeat){try{const n=new Date();simYear=n.getFullYear();if(typeof updateTimezone==="function")updateTimezone();const utcMin=n.getUTCHours()*60+n.getUTCMinutes();let local=utcMin+utcOff*60;const ud=new Date(Date.UTC(n.getUTCFullYear(),n.getUTCMonth(),n.getUTCDate()));let doy=Math.floor((ud-Date.UTC(n.getUTCFullYear(),0,0))/864e5);while(local<0){local+=1440;doy--}while(local>=1440){local-=1440;doy++}if(doy<1){simYear--;doy=daysInYear(simYear)}if(doy>daysInYear(simYear)){doy-=daysInYear(simYear);simYear++}simDay=doy;simMin=local;}catch(e){}}scrollToSky();setTimeout(()=>jumpToEclipse(dir,type),220)}
+function jumpEclipse(dir,type){beginAtomicSkyJump(640);if(typeof window.setYearPlay==="function")window.setYearPlay(false);var __repeat=(window.__lastEclipse===dir+"|"+type);window.__lastEclipse=dir+"|"+type;if(!__repeat){try{const n=new Date();simYear=n.getFullYear();if(typeof updateTimezone==="function")updateTimezone();const utcMin=n.getUTCHours()*60+n.getUTCMinutes();let local=utcMin+utcOff*60;const ud=new Date(Date.UTC(n.getUTCFullYear(),n.getUTCMonth(),n.getUTCDate()));let doy=Math.floor((ud-Date.UTC(n.getUTCFullYear(),0,0))/864e5);while(local<0){local+=1440;doy--}while(local>=1440){local-=1440;doy++}if(doy<1){simYear--;doy=daysInYear(simYear)}if(doy>daysInYear(simYear)){doy-=daysInYear(simYear);simYear++}simDay=doy;simMin=local;}catch(e){}}scrollToSky();setTimeout(()=>jumpToEclipse(dir,type),220)}
 function normalizeAngleDiff(a,b){return ((a-b+540)%360)-180}
 function setSpeedValue(sp){
   speed=sp;lastT=null;if(sp>2)userSpeed=sp;
@@ -2671,6 +2772,7 @@ function pointObserverAtSun(){
   }catch(e){}
 }
 function jumpMoonPhase(targetDeg,label){
+  beginAtomicSkyJump(420);
   const jd0=findNextMoonPhase(targetDeg);
   const jd=findMoonTransitNear(jd0);
   setSceneFromJD(52.52,13.405,jd,label||"Berlin");
@@ -2685,7 +2787,7 @@ const CONST_FOCUS={orion:{c:"Ori",n:"Orion",ra:5.6,de:2,lat:52.52,lng:13.405,m:1
 function bestTransitMinute(ra,de){const old=simMin;let bestM=old,bestAlt=-999;for(let m=0;m<1440;m+=4){simMin=m;const pc=precess(ra,de,currentJD());const P=altazXY(pc.ra,pc.dec,100);if(P.alt>bestAlt){bestAlt=P.alt;bestM=m}}simMin=old;return bestM}
 function syncFocusButtons(){const set=(id,v)=>{const b=document.getElementById(id);if(b)b.classList.toggle("on",!!v)};set("bn",showNames);set("bzod",showZodiac);set("bra",showRA);set("balt",showAlt);set("blines",showLines);set("brefc",showRefCircles);set("bmeteor",showMeteors)}
 function domeHR(){const FS=document.body.classList.contains("fullscreen");const C=Math.min(cv.width||W,cv.height||W)/2;const R=C*(FS?.998:.975);return R*(showTwilight?.8:(FS?.965:.94))}
-function focusConstellationView(key){const f=CONST_FOCUS[key];if(!f)return false;setScene(f.lat,f.lng,f.m,f.d,22*60,f.label);setTimeout(()=>{focusConstellation=f.c;viewMode="dome";if(typeof syncViewModeButtons==="function")syncViewModeButtons();showNames=false;showZodiac=false;showRA=false;showAlt=true;showLines=true;showRefCircles=true;showMeteors=true;simMin=bestTransitMinute(f.ra,f.de);const st=document.getElementById("sTime");if(st)st.value=Math.round(simMin);updLabels();syncFocusButtons();zoom=f.z||3;const HR=domeHR();const pc=precess(f.ra,f.de,currentJD());const P=altazXY(pc.ra,pc.dec,HR);panX=-zoom*P.x;panY=-zoom*P.y;interacting=8;if(typeof updateTouchMode==="function")updateTouchMode();scrollToSky();if(typeof showToast==="function")showToast(f.n+" · Lernansicht: Linien stärker · Sternnamen des Sternbilds · Meridian/Meteore");if(W)draw()},260);return true}
+function focusConstellationView(key){beginAtomicSkyJump(440);const f=CONST_FOCUS[key];if(!f)return false;setScene(f.lat,f.lng,f.m,f.d,22*60,f.label);setTimeout(()=>{focusConstellation=f.c;viewMode="dome";if(typeof syncViewModeButtons==="function")syncViewModeButtons();showNames=false;showZodiac=false;showRA=false;showAlt=true;showLines=true;showRefCircles=true;showMeteors=true;simMin=bestTransitMinute(f.ra,f.de);const st=document.getElementById("sTime");if(st)st.value=Math.round(simMin);updLabels();syncFocusButtons();zoom=f.z||3;const HR=domeHR();const pc=precess(f.ra,f.de,currentJD());const P=altazXY(pc.ra,pc.dec,HR);panX=-zoom*P.x;panY=-zoom*P.y;interacting=8;if(typeof updateTouchMode==="function")updateTouchMode();scrollToSky();if(typeof showToast==="function")showToast(f.n+" · Lernansicht: Linien stärker · Sternnamen des Sternbilds · Meridian/Meteore");if(W)draw()},260);return true}
 function searchDarkMinuteFor(name,sunMax,minAlt){
   if(minAlt===undefined)minAlt=25;
   const oldDay=simDay,oldMin=simMin,oldYear=simYear;
@@ -2840,6 +2942,7 @@ function restorePlanetReturnScroll(){
 }
 function restorePlanetViewFlags(){if(window.__planetViewSaved){showLines=window.__planetViewSaved.lines;showRefCircles=window.__planetViewSaved.refc;showZodiac=window.__planetViewSaved.zodiac;window.didHideEcl=window.__planetViewSaved.ecl;window.__planetViewSaved=null;try{if(typeof syncFocusButtons==="function")syncFocusButtons()}catch(e){}}}
 function focusPlanetView(name){
+  beginAtomicSkyJump(440);
   /* Auf Wunsch: nur der erste Sprung in dieser Didaktik-Sitzung erzwingt die Kuppelansicht
      (bzw. beendet einen laufenden Lagemodus). Waehlt der Nutzer danach ausdruecklich den
      Beobachter- oder Lagemodus, bleibt diese Wahl bei weiteren Planeten-Spruengen erhalten,
@@ -2892,6 +2995,9 @@ function getCurrentPolarLng(){
   return 0;
 }
 function jumpScene(id){
+  /* Spaetere Didaktik-Module verfeinern einzelne Ziele noch bis 520 ms nach
+     dem Aufruf. Das Zeitfenster deckt auch diese letzte bekannte Stufe ab. */
+  beginAtomicSkyJump(680);
   try{if(orientMode&&typeof disableOrient==="function")disableOrient()}catch(e){}
   if(id==="current"){setNow();scrollToSky();return}
   function jumpObsPoint(la,lo,m,d,minute,label){
@@ -3130,17 +3236,23 @@ function orientDirFromEvent(e){
 }
 function orientAzFromEvent(e){let az=null;if(typeof e.webkitCompassHeading==="number"&&!isNaN(e.webkitCompassHeading)){az=e.webkitCompassHeading}else if((e.type==="deviceorientationabsolute"||e.absolute===true)&&typeof e.alpha==="number"&&!isNaN(e.alpha)){az=360-e.alpha}if(az==null)return null;az=norm360(az+screenAngleDeg()+orientAzOffset);return az}
 function onDeviceOrient(e){if(!orientMode||orientFallback)return;orientGotEvent=true;orientLastEvent=performance.now();const isAbs=e.type==="deviceorientationabsolute"||e.absolute===true;if(isAbs)orientGotAbs=true;if(orientGotAbs&&!isAbs){if(ORIENT_DEBUG)orientDebugShow(e,isAbs,null,"verworfen: absolute Quelle erwartet, nicht-absolutes Ereignis erhalten");return;}const dir=orientDirFromEvent(e);if(ORIENT_DEBUG)orientDebugShow(e,isAbs,dir,dir==null?"verworfen: kein gueltiger Winkel":"");if(dir==null)return;const az=dir.az;const _now=performance.now();if(_orientPrevAz!=null){const _dtms=_now-_orientPrevT;const _dAng=orientAngDelta(az,_orientPrevAz);const _maxPlausibel=Math.max(20,.9*_dtms);if(_dAng>_maxPlausibel){_orientOutlierStreak++;if(_orientOutlierStreak<3){if(ORIENT_DEBUG)orientDebugShow(e,isAbs,dir,"verworfen: unplausibler Sprung "+_dAng.toFixed(1)+"° in "+_dtms.toFixed(0)+"ms (Ausreißer "+_orientOutlierStreak+"/3)");return}}else{_orientOutlierStreak=0}}_orientPrevAz=az;_orientPrevT=_now;orientGotData=true;if(typeof e.webkitCompassAccuracy==="number"&&e.webkitCompassAccuracy>35&&!orientWarnedAccuracy){orientWarnedAccuracy=true;flashMsg("📱 Kompass ungenau · Gerät kurz als Acht bewegen oder ◎ kalibrieren")}oAzT=az;oAltT=dir.alt}
-function stepOrient(){if(!orientMode)return;/* Der Lagemodus ist nur in der Beobachterprojektion sinnvoll. Die Kuppelansicht ist zenitzentriert und abstandstreu; sie bloss so zu verschieben, dass die Blickrichtung in der Mitte steht, liefert weder die richtige Bilddrehung noch einen geraden Horizont — der Horizont erscheint dort als stark gekruemmter Kreisbogen. Die Umstellung geschieht hier einmalig, weil der Lagemodus ueber fuenf verschiedene Wege eingeschaltet werden kann. */if(_orientVorMode===null){_orientVorMode=viewMode;if(viewMode!=="real"){viewMode="real";camFov=REAL_HOME_FOV;zoom=1;panX=0;panY=0;zoomedObj=null;}}/* Glaettungsstaerke je Bild. Fuer den Lagesensor etwas kraeftiger als frueher (0,12
+let __orientStepTS=0;
+function stepOrient(){if(!orientMode){__orientStepTS=0;return}/* Der Lagemodus ist nur in der Beobachterprojektion sinnvoll. Die Kuppelansicht ist zenitzentriert und abstandstreu; sie bloss so zu verschieben, dass die Blickrichtung in der Mitte steht, liefert weder die richtige Bilddrehung noch einen geraden Horizont — der Horizont erscheint dort als stark gekruemmter Kreisbogen. Die Umstellung geschieht hier einmalig, weil der Lagemodus ueber fuenf verschiedene Wege eingeschaltet werden kann. */if(_orientVorMode===null){_orientVorMode=viewMode;if(viewMode!=="real"){viewMode="real";camFov=REAL_HOME_FOV;zoom=1;panX=0;panY=0;zoomedObj=null;}}/* Die Glaettung ist jetzt zeit- statt bildabhaengig. Dadurch bleibt ihre Reaktion
+     auf 30-, 60- und 120-Hz-Geraeten gleich und wird auch bei einzelnen teuren
+     Gaia-Bildern nicht ploetzlich zaeh. Die Zeitkonstanten entsprechen bei 60 Hz
+     ungefaehr den bisherigen Faktoren 0,12 (Sensor) und 0,085 (Pfeilsimulation). */const __orientNow=performance.now(),__orientDt=__orientStepTS?Math.max(1/240,Math.min(.05,(__orientNow-__orientStepTS)/1000)):1/60;__orientStepTS=__orientNow;const __orientTau=orientFallback?.188:.130;const k=1-Math.exp(-__orientDt/__orientTau);/* Fuer den Lagesensor etwas kraeftiger als frueher (0,12
      statt 0,18), weil die neue Richtungsrechnung dem Geraet treu folgt und damit auch das
      Handzittern ungefiltert weitergibt; die Verzoegerung bleibt mit rund einer Zehntel
-     Sekunde bis zur halben Annaeherung unauffaellig. */const k=orientFallback?.35:.12;/* Geglaettet wird der Richtungsvektor, nicht Azimut und Hoehe einzeln. Getrennt
+     Sekunde bis zur halben Annaeherung unauffaellig. Im manuellen Fallback
+     simulieren die Pfeile mit einer weicheren Annaeherung eine ruhige Drehung
+     des Handys statt eines sprunghaften Kameraschnitts. *//* Geglaettet wird der Richtungsvektor, nicht Azimut und Hoehe einzeln. Getrennt
      gemittelt ergaebe das nahe Zenit und Nadir ein Umherspringen, weil der Azimut dort
      unbestimmt ist und schon winzige Lageaenderungen ihn um viele Grad wandern lassen —
      die Hoehe aendert sich dabei kaum, die Blickrichtung also auch nicht, das Bild
      drehte sich aber heftig. Ueber den Vektor gemittelt entfaellt das von selbst, und
      der Umlauf bei 360 Grad braucht keine Sonderbehandlung mehr. */const _tr=oAzT*Math.PI/180,_ta=oAltT*Math.PI/180,_cr=oAz*Math.PI/180,_ca=oAlt*Math.PI/180;const _tc=Math.cos(_ta),_cc=Math.cos(_ca);const _tx=_tc*Math.sin(_tr),_ty=_tc*Math.cos(_tr),_tz=Math.sin(_ta);const _sx=_cc*Math.sin(_cr),_sy=_cc*Math.cos(_cr),_sz=Math.sin(_ca);const _pp=Math.max(-1,Math.min(1,_tx*_sx+_ty*_sy+_tz*_sz));if(_pp<0.9999999){let _nx=_sx+(_tx-_sx)*k,_ny=_sy+(_ty-_sy)*k,_nz=_sz+(_tz-_sz)*k;const _L=Math.hypot(_nx,_ny,_nz);if(_L>1e-9){_nx/=_L;_ny/=_L;_nz/=_L;oAlt=Math.asin(Math.max(-1,Math.min(1,_nz)))*180/Math.PI;oAz=norm360(Math.atan2(_nx,_ny)*180/Math.PI);}}applyOrientView();if(!orientFallback&&orientGotEvent&&performance.now()-orientLastEvent>2500){enableOrientFallback("📱 Sensorsignal pausiert · manueller Alldocube-Modus aktiv");orientLastEvent=performance.now()+999999}}
 function setOrientFallbackUI(on){document.body.classList.toggle("orient-fallback",!!on)}
-function enableOrientFallback(msg){if(!orientMode)return;orientNoSensor=true;orientFallback=true;setOrientFallbackUI(true);if(orientHandler){window.removeEventListener("deviceorientationabsolute",orientHandler,true);window.removeEventListener("deviceorientation",orientHandler,true);orientHandler=null}oAzT=oAz; oAltT=oAlt; deviceZoom=Math.max(5.5,Math.min(8,deviceZoom||6.2));if(msg)flashMsg(msg);if(W)draw()}
+function enableOrientFallback(msg){if(!orientMode)return;const wasFallback=orientFallback;orientNoSensor=true;orientFallback=true;setOrientFallbackUI(true);if(orientHandler){window.removeEventListener("deviceorientationabsolute",orientHandler,true);window.removeEventListener("deviceorientation",orientHandler,true);orientHandler=null}/* Ohne Sensor beginnt die Pfeilsimulation in derselben Grundausrichtung wie der Beobachtermodus: Blick nach Sueden, 26 Grad Hoehe. Erst danach veraendern die Pfeile die simulierte Handylage. */if(!wasFallback){oAzT=oAz=180;oAltT=oAlt=26;applyOrientView()}else{oAzT=oAz;oAltT=oAlt}deviceZoom=Math.max(5.5,Math.min(8,deviceZoom||6.2));if(msg)flashMsg(msg);if(W)draw()}
 function manualOrient(da,dalt){if(!orientMode){enableOrient();setTimeout(()=>enableOrientFallback("Manueller Lagemodus"),80)}else if(!orientFallback){enableOrientFallback("Manueller Lagemodus")}
 oAzT=norm360(oAzT+da);/* Der Hoehenbereich war auf -5 bis 88 Grad eingeklemmt; damit liess sich mit den
      Pfeiltasten nicht unter den Horizont und schon gar nicht zum Nadir blicken.
@@ -3513,16 +3625,39 @@ let showObjectNames=true;
 function syncNameLayerButtons(){
   const lage=typeof orientMode!=="undefined"&&orientMode;
   const kamera=document.body&&document.body.classList.contains("vr-mode");
+  /* Im reinen Lagemodus sind Orientierungshilfen Teil der festen Ansicht:
+     Objekt- und Sternbildnamen sowie Sternbildlinien bleiben deshalb immer
+     aktiv. Im VR-Kameramodus gilt weiterhin dessen reduzierte Beschriftung. */
+  if(lage&&!kamera){
+    showNames=true;
+    showObjectNames=true;
+    showConstellationNames=true;
+    showLines=true;
+    const lines=document.getElementById("blines");
+    if(lines){lines.classList.add("on");lines.setAttribute("aria-pressed","true");}
+  }
   const obj=document.getElementById("bn"),con=document.getElementById("bconstnames");
   if(obj){obj.classList.toggle("on",showObjectNames);obj.setAttribute("aria-pressed",String(showObjectNames));obj.title=kamera?"Kameramodus: Planeten und nur die hellsten Sterne beschriften":"Namen von Sternen, Planeten, Sonne und Mond ein-/ausblenden"}
-  if(con){const sichtbar=showConstellationNames&&!lage&&!kamera;con.classList.toggle("on",sichtbar);con.setAttribute("aria-pressed",String(sichtbar));con.disabled=lage||kamera;con.title=kamera?"Sternbildnamen sind im Kameramodus ausgeblendet":lage?"Sternbildnamen sind im Lagemodus ausgeblendet":"Namen der Sternbilder ein-/ausblenden"}
-  window.didHideConstNames=!showConstellationNames||lage||kamera;
+  if(con){const sichtbar=showConstellationNames&&!kamera;con.classList.toggle("on",sichtbar);con.setAttribute("aria-pressed",String(sichtbar));con.disabled=lage||kamera;con.title=kamera?"Sternbildnamen sind im Kameramodus ausgeblendet":lage?"Sternbildnamen sind im Lagemodus immer eingeblendet":"Namen der Sternbilder ein-/ausblenden"}
+  window.didHideConstNames=!showConstellationNames||kamera;
 }
 togNames=function(){showObjectNames=!showObjectNames;syncNameLayerButtons();if(W)draw()};
 function togConstellationNames(){
-  if(typeof orientMode!=="undefined"&&orientMode){try{showToast("Im Lagemodus werden nur Objektnamen angezeigt")}catch(e){}return}
+  if(typeof orientMode!=="undefined"&&orientMode){try{showToast("Sternbildnamen sind im Lagemodus immer eingeblendet")}catch(e){}return}
   showConstellationNames=!showConstellationNames;syncNameLayerButtons();if(W)draw();
 }
+const toggleLinesOutsideOrientation=togLines;
+togLines=function(){
+  if(typeof orientMode!=="undefined"&&orientMode){
+    showLines=true;
+    const button=document.getElementById("blines");
+    if(button){button.classList.add("on");button.setAttribute("aria-pressed","true");}
+    try{showToast("Sternbildlinien sind im Lagemodus immer eingeblendet")}catch(e){}
+    if(W)draw();
+    return;
+  }
+  return toggleLinesOutsideOrientation();
+};
 queueMicrotask(()=>{
   syncNameLayerButtons();
   /* Der bestehende Renderer benutzt einen gemeinsamen fillText-Weg. Der Filter
@@ -3541,7 +3676,7 @@ queueMicrotask(()=>{
       label=String(label);
       const cameraOnly=window.cameraStarOnly===true||document.body.classList.contains("vr-mode");
       if(cameraOnly&&objectLabels.has(label)&&!brightestCameraStars.has(label)&&!cameraBodies.has(label))return false;
-      if(constellationLabels.has(label)&&(!showConstellationNames||(typeof orientMode!=="undefined"&&orientMode)||cameraOnly))return false;
+      if(constellationLabels.has(label)&&(!showConstellationNames||cameraOnly))return false;
       if(objectLabels.has(label)&&!showObjectNames)return false;
       return true;
     };
@@ -3877,6 +4012,7 @@ window.__planetariumLegacy = Object.freeze({
       case "simYear": return simYear;
       case "simMin": return simMin;
       case "speed": return speed;
+      case "interacting": return interacting;
       case "lat": return lat;
       case "lng": return lng;
       case "utcOff": return utcOff;

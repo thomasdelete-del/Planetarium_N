@@ -2,10 +2,10 @@ import { bootstrapApplication } from "./app/bootstrap.js?v=20260813b2";
 import { activateDeferredStylesheets } from "./platform/deferredResources.js";
 import { bindOrientationCanvasInteractions } from "./ui/orientationCanvasInteractions.js";
 import { bindWorldMap } from "./ui/worldMap.js";
-import { installLightPollutionEstimator } from "./features/location/lightPollution.js";
+import { installLightPollutionEstimator } from "./features/location/lightPollution.js?v=20260815-sqm1";
 import { installPrecessionCircleControl } from "./features/didactics/precessionCircle.js";
 import { installRuntimePerformanceProfile } from "./platform/runtimePerformance.js";
-import { installLabelCadence } from "./features/render/labelCadence.js";
+import { installLabelCadence } from "./features/render/labelCadence.js?v=20260815d-jumps6";
 
 activateDeferredStylesheets();
 

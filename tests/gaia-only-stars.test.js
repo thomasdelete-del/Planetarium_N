@@ -80,16 +80,31 @@ test("fast time lapse limits exact astronomy frames by visible pixel motion", ()
 });
 
 test("observer and orientation modes label more bright stars", () => {
-  assert.match(core, /const starNameLimit=viewMode==="real"\?Math\.min\(4,3\.4\+\.3\*Math\.log2\(Math\.max\(1,zEff\)\)\):1\.8/);
+  assert.match(core, /const starNameLimit=viewMode==="real"\?Math\.min\(4,3\.4\+\.3\*Math\.log2\(Math\.max\(1,zEff\)\)\):orientMode\?5:1\.8/);
 });
 
-test("orientation mode uses continuous site-aware stellar photometry", () => {
+test("orientation mode uses continuous site-aware stellar photometry above and below the horizon", () => {
   assert.match(core, /function orientStarStyle\(mag,scale\)/);
   assert.match(core, /const lim=window\.skyMagBase\|\|5\.5/);
   assert.match(core, /edge\*edge\*\(3-2\*edge\)/);
   assert.match(core, /orientStyle=orientMode\?orientStarStyle\(mag,PX\/zoom\):null/);
   assert.match(core, /orientStyle=orientMode\?orientStarStyle\(mag,rbg\):null/);
-  assert.match(core, /sinA>0\?extBySinAlt\(sinA\):orientMode\?0:\.55/);
+  assert.match(core, /sinA>0\?extBySinAlt\(sinA\):\.55/);
+});
+
+test("orientation rendering follows visible pixel motion instead of every sensor event", () => {
+  assert.match(core, /function __orientDrawNeeded\(\)/);
+  assert.match(core, /const minMs=perf==="low"\?24:16/);
+  assert.match(core, /return pixels>=\.10\|\|Math\.abs\(camFov-__orientDrawFov\)>\.01/);
+  assert.match(core, /if\(orientMode\)return true/);
+  assert.match(core, /const k=1-Math\.exp\(-__orientDt\/__orientTau\)/);
+});
+
+test("manual orientation arrows simulate a smooth device movement", () => {
+  assert.match(core, /const __orientTau=orientFallback\?\.188:\.130/);
+  assert.match(core, /const k=1-Math\.exp\(-__orientDt\/__orientTau\)/);
+  assert.match(core, /oAzT=norm360\(oAzT\+da\)/);
+  assert.match(core, /oAltT=Math\.max\(-89,Math\.min\(89,oAltT\+dalt\)\)/);
 });
 
 test("Gaia depth light is projected in observer mode", () => {
@@ -100,14 +115,40 @@ test("Gaia depth light is projected in observer mode", () => {
 
 test("Gaia depth light uses a persistent GPU buffer in observer mode", () => {
   assert.match(core, /densityLayer:true/);
-  assert.match(core, /const _gaiaDichteGpuMoeglich=!orientMode&&_gaiaGLInit\(\)/);
+  assert.match(core, /const _gaiaDichteGpuMoeglich=_gaiaGLInit\(\)/);
   assert.match(core, /density:_gaiaGpuDensity/);
   assert.match(core, /e\.density\?gl\.ONE:gl\.ONE_MINUS_SRC_ALPHA/);
 });
 
+test("orientation mode renders Gaia through the persistent GPU pipeline", () => {
+  assert.match(core, /const _gaiaGpuBase=!!_GAIA&&/);
+  assert.match(core, /allowBelow:_rm&&orientMode/);
+  assert.doesNotMatch(core, /if\(orientMode\|\|!_GAIA\)_gaiaGLHide/);
+  assert.match(core, /if\(orientMode\)gl\.finish\(\);else gl\.flush\(\)/);
+});
+
 test("labels and constellation lines follow every rendered fast-time frame", () => {
   assert.match(labelCadence, /Math\.abs\(Number\(legacy\.get\("speed"\)\) \|\| 0\) >= 900/);
+  assert.match(labelCadence, /legacy\.get\("orientMode"\) === true\)[\s\S]*?document\.body\.classList\.contains\("orient-mode"\)/);
+  assert.match(labelCadence, /if \(orientationSky\) \{[\s\S]*?canvas\.style\.display = "none";[\s\S]*?return drawContext\.next/);
   assert.match(labelCadence, /const refresh = force \|\| fastSky \|\| now - lastFrame >= intervalMs/);
+  assert.match(labelCadence, /let layerPrepared = !refresh/);
+  assert.match(labelCadence, /const prepareLayer = \(\) => \{[\s\S]*?context\.clearRect/);
+  assert.doesNotMatch(labelCadence, /if \(refresh\) \{\s*force = false;\s*lastFrame = now;\s*context\.setTransform/);
+});
+
+test("orientation mode always enables names and constellation lines", () => {
+  assert.match(core, /if\(lage&&!kamera\)\{[\s\S]*?showObjectNames=true;[\s\S]*?showConstellationNames=true;[\s\S]*?showLines=true/);
+  assert.match(core, /Sternbildnamen sind im Lagemodus immer eingeblendet/);
+  assert.match(core, /Sternbildlinien sind im Lagemodus immer eingeblendet/);
+  assert.doesNotMatch(core, /constellationLabels\.has\(label\)&&\(!showConstellationNames\|\|\(typeof orientMode/);
+});
+
+test("orientation mode keeps the complete sky visible below the horizon", () => {
+  assert.match(core, /if\(orientMode\)\{gg\.addColorStop\(0,"rgba\(11,16,24,\.40\)"\)/);
+  assert.match(core, /gg\.addColorStop\(1,"rgba\(4,6,10,\.56\)"\)/);
+  assert.match(core, /function _altOK\(a\)\{return a>=0\|\|\(orientMode&&a>-900\)\}/);
+  assert.match(core, /sinAlt<=0\.0\?\(u_allowBelow>\.5\?\.55:0\.0\)/);
 });
 
 test("local declination reference circles use stationary hour-angle samples", () => {

@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { distanceKm, estimateSkyQuality, installLightPollutionEstimator } from "../src/features/location/lightPollution.js";
+import { distanceKm, estimateSkyQuality, installLightPollutionEstimator, lightPollutionMapUrl, sqmToNelm } from "../src/features/location/lightPollution.js";
 
 const cities = [
   { n: "Metropole", la: 52.52, lo: 13.4, cap: 1 },
@@ -35,4 +35,17 @@ test("Installation stellt eine kleine Legacy-Schnittstelle bereit", () => {
 
 test("Ungültige Koordinaten werden abgewiesen", () => {
   assert.throws(() => estimateSkyQuality(Number.NaN, 10, cities), /gültige Koordinaten/);
+});
+
+test("SQM wird in eine plausible visuelle Grenzgröße umgerechnet", () => {
+  assert.ok(Math.abs(sqmToNelm(18.01) - 3.98) < 0.05);
+  assert.ok(Math.abs(sqmToNelm(21.7) - 6.48) < 0.05);
+  assert.throws(() => sqmToNelm(30), /zwischen 10 und 24/);
+});
+
+test("Kartenlink enthält den aktuellen Standort", () => {
+  const url = new URL(lightPollutionMapUrl(52.52, 13.405));
+  assert.equal(url.hostname, "lightpollutionmap.app");
+  assert.equal(url.searchParams.get("lat"), "52.520000");
+  assert.equal(url.searchParams.get("lng"), "13.405000");
 });
