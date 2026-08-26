@@ -3303,9 +3303,8 @@ function orientDebugShow(e,isAbs,dir,note){
 function flashMsg(t){const pop=document.getElementById("info-pop");if(!pop)return;pop.innerHTML=`<div class="irow">${t}</div>`;pop.classList.add("show");pop.style.left="50%";pop.style.top="13%";pop.style.transform="translateX(-50%)";clearTimeout(flashMsg._t);flashMsg._t=setTimeout(()=>{pop.classList.remove("show");pop.style.transform=""},3200)}
 function norm360(a){return(a%360+360)%360}
 function screenAngleDeg(){try{if(screen.orientation&&typeof screen.orientation.angle==="number")return screen.orientation.angle||0;if(typeof window.orientation==="number")return window.orientation||0}catch(e){}return 0}
-function applyOrientView(){if(viewMode==="real"){/* orientDirFromEvent liefert bereits die Richtung der rueckseitigen
-   Handykamera. Die bisherige zusaetzliche Drehung um 180 Grad kehrte die
-   Himmelsrichtung ein zweites Mal um. */camAz=norm360(oAz);camAlt=Math.max(-89,Math.min(89,oAlt));zoom=1;panX=0;panY=0;if(typeof updateTouchMode==="function")updateTouchMode();return;}const R=(cvW||W)/2*(showTwilight?.8:.94);const altc=Math.max(-8,Math.min(89,oAlt));const Aproj=oAz*Math.PI/180;const r=(90-altc)/90*R,cx=r*Math.sin(Aproj),cy=r*Math.cos(Aproj);zoom=deviceZoom;panX=-zoom*cx;panY=-zoom*cy;updateTouchMode&&updateTouchMode()}
+function applyOrientView(){if(viewMode==="real"){/* DeviceOrientation beschreibt die Display-Achse. Fuer den Blick der
+   rueckseitigen Handykamera ist deshalb die Gegenrichtung erforderlich. */camAz=norm360(oAz-180);camAlt=Math.max(-89,Math.min(89,oAlt));zoom=1;panX=0;panY=0;if(typeof updateTouchMode==="function")updateTouchMode();return;}const R=(cvW||W)/2*(showTwilight?.8:.94);const altc=Math.max(-8,Math.min(89,oAlt));const Aproj=(oAz-180)*Math.PI/180;const r=(90-altc)/90*R,cx=r*Math.sin(Aproj),cy=r*Math.cos(Aproj);zoom=deviceZoom;panX=-zoom*cx;panY=-zoom*cy;updateTouchMode&&updateTouchMode()}
 function orientAltFromBetaGamma(beta,gamma){if(beta==null||!isFinite(beta))return 45;const b=(beta||0)*Math.PI/180,gm=(gamma||0)*Math.PI/180;let c=Math.cos(b)*Math.cos(gm);c=Math.max(-1,Math.min(1,c));/* Die Blickrichtung ist die Rueckseite des Geraets, wie bei einer Kamera. Flach
      liegend mit dem Bildschirm nach oben weist sie nach unten: Nadir, bei 52,5 Grad
      Nord also Deklination -52,5 und damit die Suedpolgegend. Flach mit dem Bildschirm
