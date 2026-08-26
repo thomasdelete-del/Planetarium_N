@@ -5,7 +5,7 @@ import { bindWorldMap } from "./ui/worldMap.js";
 import { installLightPollutionEstimator } from "./features/location/lightPollution.js?v=20260815-sqm1";
 import { installPrecessionCircleControl } from "./features/didactics/precessionCircle.js";
 import { installRuntimePerformanceProfile } from "./platform/runtimePerformance.js";
-import { installLabelCadence } from "./features/render/labelCadence.js?v=20260815d-jumps6";
+import { installLabelCadence } from "./features/render/labelCadence.js?v=20260815d-timelabelsmooth3";
 
 activateDeferredStylesheets();
 

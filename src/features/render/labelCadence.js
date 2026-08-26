@@ -17,6 +17,8 @@ function isConstellationStroke(style) {
 export function installLabelCadence({ globalObject = window, intervalMs = 200 } = {}) {
   if (globalObject.__planetariumLabelCadence) return globalObject.__planetariumLabelCadence;
   let canvas = null, context = null, lastFrame = -Infinity, force = true;
+  let previousAnchors = new Map(), currentAnchors = null, anchorOccurrences = null;
+  let labelMotion = null;
 
   function ensureLayer(sourceCanvas) {
     if (!canvas) {
@@ -45,9 +47,17 @@ export function installLabelCadence({ globalObject = window, intervalMs = 200 } 
        alte 5-Hz-Ebene im Lagemodus sichtbar und lief dem Hauptcanvas nach. */
     const orientationSky = (legacy && legacy.get("orientMode") === true) ||
       document.body.classList.contains("orient-mode");
+    const runningTime = legacy && !legacy.get("paused") && Math.abs(Number(legacy.get("speed")) || 0) > 0;
+    const movingView = legacy && Number(legacy.get("interacting")) > 0;
     /* Die Lagebewegung wird bereits im Legacy-Renderer pixelgenau gedrosselt.
        Eine zweite Ebene wuerde beim Schwenken sichtbar hinterherlaufen. */
-    if (orientationSky) {
+    /* Dasselbe gilt fuer Zeitlauf und manuelles Schwenken: Selbst bei identischen
+       Projektionskoordinaten kann der Browser zwei Canvas-Ebenen in
+       aufeinanderfolgenden Compositor-Schritten darstellen. Texte und
+       Sternbildlinien wirken dann, als liefen sie den Sternen hinterher. In
+       bewegten Bildern landen deshalb alle astronomischen Elemente im selben
+       Legacy-Canvas und damit garantiert im selben praesentierten Frame. */
+    if (orientationSky || movingView) {
       if (canvas) canvas.style.display = "none";
       return drawContext.next(...drawContext.args);
     }
@@ -63,19 +73,20 @@ export function installLabelCadence({ globalObject = window, intervalMs = 200 } 
        kontinuierlich. Eine 5-Hz-Ebene macht diese Bewegung als kleine Spruenge
        sichtbar. Es werden keine Extra-Frames erzeugt; vorhandene Zeitbilder
        erhalten lediglich die dazugehoerige Text- und Linienprojektion. */
-    const runningTime = legacy && !legacy.get("paused") && Math.abs(Number(legacy.get("speed")) || 0) > 0;
     /* Maus-, Touch-, Rad- und simulierte Pfeilbewegungen setzen im Legacy-
        Renderer `interacting`. Solange dieser Zaehler aktiv ist, muessen Texte
        und Sternbildlinien dasselbe Kamerabild wie die Sterne verwenden. */
-    const movingView = legacy && Number(legacy.get("interacting")) > 0;
     /* Im Lagemodus ist die Kameralage selbst die Animation. Die getrennte
        Beschriftungs- und Sternbildlinienebene muss deshalb mit jedem bereits
        freigegebenen Himmelsbild neu projiziert werden. Ein 5-Hz-Cache wuerde
        beim Schwenken sichtbar hinter den Sternen herspringen. */
     const refresh = force || fastSky || runningTime || movingView || now - lastFrame >= intervalMs;
+    const frameGap = isFinite(lastFrame) ? now - lastFrame : 16;
     if (refresh) {
       force = false;
       lastFrame = now;
+      currentAnchors = new Map();
+      anchorOccurrences = new Map();
     }
     /* Der Legacy-Renderer kann einen zu kleinen Sensor-Zwischenschritt direkt
        am Anfang verwerfen. Die alte Fassung hatte die sichtbare Ebene bereits
@@ -130,6 +141,14 @@ export function installLabelCadence({ globalObject = window, intervalMs = 200 } 
           drawY *= outward;
         }
       }
+      const label = String(text);
+      const occurrence = anchorOccurrences.get(label) || 0;
+      anchorOccurrences.set(label, occurrence + 1);
+      const matrix = source.getTransform();
+      currentAnchors.set(`${label}\u0000${occurrence}`, {
+        x: matrix.a * drawX + matrix.c * drawY + matrix.e,
+        y: matrix.b * drawX + matrix.d * drawY + matrix.f
+      });
       return maxWidth === undefined ? context.fillText(text, drawX, drawY) : context.fillText(text, drawX, drawY, maxWidth);
     };
     source.strokeText = function (text, x, y, maxWidth) {
@@ -158,15 +177,50 @@ export function installLabelCadence({ globalObject = window, intervalMs = 200 } 
       context.setTransform(1, 0, 0, 1, 0, 0);
       const x = Number(legacy.get("ORX")) + Number(legacy.get("panX"));
       const y = Number(legacy.get("ORY")) + Number(legacy.get("panY"));
-      context.font = `700 ${Math.max(12, 14 * (globalObject.devicePixelRatio || 1))}px Inter,system-ui,sans-serif`;
+      const pixelRatio = globalObject.devicePixelRatio || 1;
+      const shortSide = Math.min(globalObject.innerWidth || 720, globalObject.innerHeight || 720);
+      const mobileScale = shortSide >= 720 ? 1 : Math.max(.62, shortSide / 720);
+      context.font = `700 ${Math.max(9 * pixelRatio, 14 * pixelRatio * mobileScale)}px Inter,system-ui,sans-serif`;
       context.textAlign = "center";
       context.textBaseline = "bottom";
       context.fillStyle = "rgba(225,235,255,.92)";
       context.shadowColor = "rgba(2,6,18,.98)";
-      context.shadowBlur = 6 * (globalObject.devicePixelRatio || 1);
-      context.fillText("Zenit", x, y - 12 * (globalObject.devicePixelRatio || 1));
+      context.shadowBlur = 6 * pixelRatio * mobileScale;
+      context.fillText("Zenit", x, y - 12 * pixelRatio * mobileScale);
       context.restore();
     }
+    /* Der astronomische Renderer liefert weiterhin die exakten Zielpunkte.
+       Zwischen zwei teuren Bildern bewegt der Browser die gesamte Text- und
+       Sternbildlinienebene im Compositor um die robuste mittlere
+       Bildverschiebung weiter. Dadurch werden keine erfundenen Sternorte
+       dauerhaft verwendet: Jeder neue Rechenframe rastet wieder exakt ein. */
+    if (refresh && runningTime && previousAnchors.size && currentAnchors.size) {
+      const dx = [], dy = [];
+      for (const [key, point] of currentAnchors) {
+        const previous = previousAnchors.get(key);
+        if (!previous) continue;
+        const mx = previous.x - point.x, my = previous.y - point.y;
+        if (isFinite(mx) && isFinite(my) && Math.abs(mx) < canvas.width * .12 && Math.abs(my) < canvas.height * .12) {
+          dx.push(mx); dy.push(my);
+        }
+      }
+      if (dx.length >= 2) {
+        dx.sort((a, b) => a - b); dy.sort((a, b) => a - b);
+        const mid = Math.floor(dx.length / 2);
+        const scaleX = sourceCanvas.getBoundingClientRect().width / sourceCanvas.width;
+        const scaleY = sourceCanvas.getBoundingClientRect().height / sourceCanvas.height;
+        const fromX = dx[mid] * scaleX, fromY = dy[mid] * scaleY;
+        if (labelMotion) labelMotion.cancel();
+        labelMotion = canvas.animate(
+          [{ transform: `translate(${fromX}px,${fromY}px)` }, { transform: "translate(0px,0px)" }],
+          { duration: Math.max(16, Math.min(80, frameGap)), easing: "linear", fill: "both" }
+        );
+      }
+    } else if (refresh && labelMotion) {
+      labelMotion.cancel(); labelMotion = null;
+      canvas.style.transform = "translate(0px,0px)";
+    }
+    if (refresh) previousAnchors = currentAnchors;
     return result;
   }
 

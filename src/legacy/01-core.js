@@ -42,7 +42,16 @@ window.__V9_UNIFY_LABELS=true;window.__V9_LABEL_SIZE=13;
           const cs=[[x0,y0],[x0+w,y0],[x0,y0+h],[x0+w,y0+h]].map(p=>({X:m.a*p[0]+m.c*p[1]+m.e,Y:m.b*p[0]+m.d*p[1]+m.f}));
           const pd=2*(window.devicePixelRatio||1);
           const bx={x1:Math.min(cs[0].X,cs[1].X,cs[2].X,cs[3].X)-pd,y1:Math.min(cs[0].Y,cs[1].Y,cs[2].Y,cs[3].Y)-pd,x2:Math.max(cs[0].X,cs[1].X,cs[2].X,cs[3].X)+pd,y2:Math.max(cs[0].Y,cs[1].Y,cs[2].Y,cs[3].Y)+pd};
-          if(!mustDraw){for(const o of window.__lblBoxes){if(bx.x1<o.x2&&bx.x2>o.x1&&bx.y1<o.y2&&bx.y2>o.y1){boxOK=false;break}}}
+          /* Im Zeitlauf veraendert sich eine Textbox pro Bild nur minimal. Eine
+             komplett neue Kollisionsentscheidung liess Sternnamen dennoch
+             abwechselnd erscheinen und verschwinden; das wurde als Ruckeln
+             wahrgenommen, obwohl ihre Projektion korrekt war. Waehrend einer
+             laufenden Zeitanimation bleibt die vom Helligkeitsfilter gewaehlte
+             Namensmenge deshalb stabil. Im Standbild verhindert die bisherige
+             Kollisionspruefung weiterhin unlesbare Ueberlagerungen. */
+          const legacyState=window.__planetariumLegacy;
+          const smoothTimeLabels=!!legacyState&&!legacyState.get("paused")&&Math.abs(Number(legacyState.get("speed"))||0)>0;
+          if(!mustDraw&&!smoothTimeLabels){for(const o of window.__lblBoxes){if(bx.x1<o.x2&&bx.x2>o.x1&&bx.y1<o.y2&&bx.y2>o.y1){boxOK=false;break}}}
           if(boxOK||mustDraw)window.__lblBoxes.push(bx);
         }
         if(boxOK||mustDraw){if(maxWidth===undefined)nativeFillText(text,x,y);else nativeFillText(text,x,y,maxWidth);}
@@ -456,7 +465,7 @@ function _gaiaGLInit(){
     const vs=_gaiaGLShader(gl,gl.VERTEX_SHADER,`precision highp float;
 attribute vec3 a_pos;attribute float a_mag;attribute vec3 a_col;attribute float a_id;attribute float a_density;
 uniform vec3 u_m0,u_m1,u_m2;uniform vec2 u_lst;uniform vec2 u_phi;uniform vec4 u_view;uniform vec4 u_camera;
-uniform vec4 u_screen;uniform vec4 u_clip;uniform vec4 u_cull;uniform vec3 u_lod;uniform float u_real;uniform float u_allowBelow;uniform float u_point;uniform float u_night;
+uniform vec4 u_screen;uniform vec4 u_clip;uniform vec4 u_cull;uniform vec3 u_lod;uniform float u_real;uniform float u_allowBelow;uniform float u_point;uniform float u_night;uniform float u_densityScreen;
 varying vec3 v_col;varying float v_alpha;varying float v_densityLayer;
 void hide(){gl_Position=vec4(2.0,2.0,0.0,1.0);gl_PointSize=0.0;v_alpha=0.0;v_densityLayer=0.0;}
 void main(){
@@ -488,8 +497,8 @@ void main(){
        reduzieren; andernfalls wird jedes Katalogsample als heller Wattebausch
        sichtbar. Die groessere Ausdehnung und rund elfmal kleinere Mitte
        ergeben wieder einen ruhigen, sich ueberlagernden Sternschimmer. */
-    v_alpha=min(.055,fade*u_night*flux*.00055*pow(1.20,bucket));
-    gl_PointSize=max(3.0,(13.0+bucket*.55)*u_point);v_col=a_col;v_densityLayer=1.0;return;
+    v_alpha=min(.055,fade*u_night*flux*.00055*pow(1.20,bucket))*u_densityScreen;
+    gl_PointSize=max(1.5,(13.0+bucket*.55)*u_point*u_densityScreen);v_col=a_col;v_densityLayer=1.0;return;
   }
   float faint=max(0.0,mag-6.5),lodFlux=mag>6.5?min(1.65,pow(stride,.22)):1.0;
   float telescope=u_real>.5?min(2.45,1.0+.62*log(max(1.0,u_lod.z))/log(2.0)):1.0;
@@ -507,7 +516,7 @@ void main(){vec2 q=gl_PointCoord-.5;float d=dot(q,q);if(d>.25)discard;float edge
     const p=gl.createProgram();gl.attachShader(p,vs);gl.attachShader(p,fs);gl.linkProgram(p);if(!gl.getProgramParameter(p,gl.LINK_STATUS))throw new Error(gl.getProgramInfoLog(p)||"Gaia-Programm");
     c.id="gaia-gl-layer";c.setAttribute("aria-hidden","true");Object.assign(c.style,{position:"absolute",inset:"0",width:"100%",height:"100%",zIndex:"2",pointerEvents:"none"});wrap.appendChild(c);
     _gaiaGL.canvas=c;_gaiaGL.gl=gl;_gaiaGL.program=p;_gaiaGL.loc={};window.__gaiaGpuStatus={active:false,ready:true,count:0,fallback:false};document.documentElement.dataset.gaiaGpu="ready";
-    for(const n of["a_pos","a_mag","a_col","a_id","a_density","u_m0","u_m1","u_m2","u_lst","u_phi","u_view","u_camera","u_screen","u_clip","u_cull","u_lod","u_real","u_allowBelow","u_point","u_night"])_gaiaGL.loc[n]=n[0]==="a"?gl.getAttribLocation(p,n):gl.getUniformLocation(p,n);
+    for(const n of["a_pos","a_mag","a_col","a_id","a_density","u_m0","u_m1","u_m2","u_lst","u_phi","u_view","u_camera","u_screen","u_clip","u_cull","u_lod","u_real","u_allowBelow","u_point","u_night","u_densityScreen"])_gaiaGL.loc[n]=n[0]==="a"?gl.getAttribLocation(p,n):gl.getUniformLocation(p,n);
     return true;
   }catch(e){console.warn("Gaia WebGL Fallback:",e);window.__gaiaGpuStatus={active:false,ready:false,count:0,fallback:true,error:String(e)};document.documentElement.dataset.gaiaGpu="fallback";_gaiaGL.failed=true;return false}
 }
@@ -531,7 +540,7 @@ function _gaiaGLDraw(kataloge,o){
   try{const gl=_gaiaGL.gl,c=_gaiaGL.canvas;c.style.display="block";if(c.width!==cvW||c.height!==cvH){c.width=cvW;c.height=cvH}gl.viewport(0,0,c.width,c.height);gl.clearColor(0,0,0,0);gl.clear(gl.COLOR_BUFFER_BIT);gl.useProgram(_gaiaGL.program);
     const L=_gaiaGL.loc,S=9*4,attr=(n,size,off)=>{gl.enableVertexAttribArray(L[n]);gl.vertexAttribPointer(L[n],size,gl.FLOAT,false,S,off*4)};
     gl.uniform3f(L.u_m0,o.M.m00,o.M.m01,o.M.m02);gl.uniform3f(L.u_m1,o.M.m10,o.M.m11,o.M.m12);gl.uniform3f(L.u_m2,o.M.m20,o.M.m21,o.M.m22);gl.uniform2f(L.u_lst,o.cosLST,o.sinLST);gl.uniform2f(L.u_phi,o.sinPhi,o.cosPhi);
-    gl.uniform4f(L.u_view,o.panX,o.panY,o.twoOverPiR,o.rf2);gl.uniform4f(L.u_camera,o.rsA,o.rcA,o.rcc,o.rsc);gl.uniform4f(L.u_screen,o.ORX,o.ORY,cvW,cvH);gl.uniform4f(L.u_clip,o.vx0,o.vx1,o.vy0,o.vy1);gl.uniform4f(L.u_cull,o.cullX,o.cullY,o.cullZ,o.cullCos);gl.uniform3f(L.u_lod,o.lim,o.stride,o.zoom);gl.uniform1f(L.u_real,o.real?1:0);gl.uniform1f(L.u_allowBelow,o.allowBelow?1:0);gl.uniform1f(L.u_point,o.point);gl.uniform1f(L.u_night,o.night);
+    gl.uniform4f(L.u_view,o.panX,o.panY,o.twoOverPiR,o.rf2);gl.uniform4f(L.u_camera,o.rsA,o.rcA,o.rcc,o.rsc);gl.uniform4f(L.u_screen,o.ORX,o.ORY,cvW,cvH);gl.uniform4f(L.u_clip,o.vx0,o.vx1,o.vy0,o.vy1);gl.uniform4f(L.u_cull,o.cullX,o.cullY,o.cullZ,o.cullCos);gl.uniform3f(L.u_lod,o.lim,o.stride,o.zoom);gl.uniform1f(L.u_real,o.real?1:0);gl.uniform1f(L.u_allowBelow,o.allowBelow?1:0);gl.uniform1f(L.u_point,o.point);gl.uniform1f(L.u_night,o.night);gl.uniform1f(L.u_densityScreen,o.densityScreen==null?1:o.densityScreen);
     gl.enable(gl.BLEND);let gesamt=0;for(const e of eintraege){gl.blendFunc(gl.SRC_ALPHA,e.density?gl.ONE:gl.ONE_MINUS_SRC_ALPHA);gl.bindBuffer(gl.ARRAY_BUFFER,e.buffer);attr("a_pos",3,0);attr("a_mag",1,3);attr("a_col",3,4);attr("a_id",1,7);attr("a_density",1,8);gl.drawArrays(gl.POINTS,0,e.count);gesamt+=e.count}
     /* Im Lagemodus muessen Gaia, Sterne, Linien, Namen und Horizont denselben
        Kamerastand zeigen. Die Gaia-Ebene ist ein separates WebGL-Canvas; ein
@@ -1104,16 +1113,21 @@ function geoAlt(ra,dec){
 }
 function drawFixedOrientationLabels(LScale){
   const HW=(cvW||W)/2,HH=(cvH||W)/2;
+  const uiShort=Math.min(window.innerWidth||720,window.innerHeight||720);
+  /* Zenit/Nadir sind Orientierungshilfen, keine Himmelsobjekte. Auf einem
+     schmalen Handy duerfen sie deshalb weder die Sternnamen noch helle Koerper
+     optisch ueberragen. */
+  const orientationUiScale=uiShort>=720?1:Math.max(.46,uiShort/900);
   const mark=(az,alt,label,color)=>{
     const P=projReal(az,alt);
     if(P.alt===-999||!isFinite(P.x)||!isFinite(P.y)||Math.abs(P.x)>HW-28*PX||Math.abs(P.y)>HH-28*PX)return;
     g.save();
-    g.font=`700 ${Math.max(12*PX,14*PX*LScale)}px Inter,system-ui,sans-serif`;
+    g.font=`700 ${Math.max(7*PX,12*PX*LScale*orientationUiScale)}px Inter,system-ui,sans-serif`;
     g.textAlign="center";g.textBaseline="middle";
-    g.shadowColor="rgba(2,6,18,.98)";g.shadowBlur=6*PX;
+    g.shadowColor="rgba(2,6,18,.98)";g.shadowBlur=6*PX*orientationUiScale;
     g.fillStyle=color;
-    g.beginPath();g.arc(P.x,P.y,3.2*PX,0,Math.PI*2);g.fill();
-    g.fillText(label,P.x,P.y-14*PX);
+    g.beginPath();g.arc(P.x,P.y,2.2*PX*orientationUiScale,0,Math.PI*2);g.fill();
+    g.fillText(label,P.x,P.y-10*PX*orientationUiScale);
     g.restore();
   };
   mark(0,Math.PI/2,"Zenit","rgba(225,235,255,.92)");
@@ -1221,9 +1235,11 @@ function drawGroundAndCompass(LScale){
         x*=k;y*=k;edge=true;
       }
       g.save();
-      g.font=`700 ${Math.max(12*PX,14*PX*LScale)}px Inter,system-ui,sans-serif`;
+      const uiShort=Math.min(window.innerWidth||720,window.innerHeight||720);
+      const orientationUiScale=uiShort>=720?1:Math.max(.62,uiShort/720);
+      g.font=`700 ${Math.max(9*PX,14*PX*LScale*orientationUiScale)}px Inter,system-ui,sans-serif`;
       g.textAlign="center";g.textBaseline="middle";
-      g.shadowColor="rgba(2,6,18,.98)";g.shadowBlur=6*PX;
+      g.shadowColor="rgba(2,6,18,.98)";g.shadowBlur=6*PX*orientationUiScale;
       g.fillStyle=col;g.fillText(edge?"◂ "+text+" ▸":text,x,y);
       g.restore();
       return !edge;
@@ -1645,8 +1661,15 @@ let _cullX=0,_cullY=0,_cullZ=0,_cullCos=-2;{let _cAlt,_cAz,_angR;
    uebernehmen sukzessive die vollstaendigen Sichtfeldkacheln. */
 /* Im Beobachtermodus zeichnet WebGL dieselben vorbereiteten Dichtevektoren.
    Canvas 2D bleibt ausschliesslich als Kompatibilitaets- und Lagemoduspfad. */
+/* Das freigegebene PC-Bild ab 900 CSS-Pixel kurzer Kante bleibt exakt
+   unveraendert. Nur kleinere Anzeigen erhalten ein eigenes Dichteprofil.
+   CSS-Pixel verhindern, dass ein hochaufloesendes Handy als Desktop gilt. */
+const _gaiaCssShort=Math.min((cvW||W)/Math.max(1,PX),(cvH||W)/Math.max(1,PX));
+const _gaiaCssLong=Math.max((cvW||W)/Math.max(1,PX),(cvH||W)/Math.max(1,PX));
+const _gaiaScreenScale=(_gaiaCssLong>=1100||_gaiaCssShort>=900)?1:_gaiaCssShort<=420?.32:
+  .32+.68*Math.pow((_gaiaCssShort-420)/480,.9);
 const _gaiaDichteGpuMoeglich=_gaiaGLInit();
-if(_gaiaDichte&&_gaiaDichte.sample&&!_gaiaDichteGpuMoeglich&&(window.skyMagBase||6.5)>=6.49&&nightF>.18&&!(typeof interacting!=="undefined"&&interacting>0)){
+if(_gaiaDichte&&_gaiaDichte.sample&&!_gaiaDichteGpuMoeglich&&(window.skyMagBase||6.5)>=6.49&&nightF>.18){
   const fade=Math.max(0,Math.min(1,(3.4-zEff)/2.4));
   if(fade>.01){
     const D=_gaiaDichte,halos=Array.from({length:13},()=>new Path2D()),dm=_vondrak(jd0),size=Math.max(.32,Math.min(.62,(_rm?PX:PX/zoom)*.42));
@@ -1689,7 +1712,7 @@ if(_gaiaDichte&&_gaiaDichte.sample&&!_gaiaDichteGpuMoeglich&&(window.skyMagBase|
            additiver Halo erhaelt den aufsummierten Fluss. Erst viele in der
            Sichtlinie dicht liegende Quellen bilden dadurch eine Flaechenhelligkeit;
            ausserhalb der Milchstrasse bleibt der Hintergrund dunkel. */
-        const haloR=size*(4.0+bucket*.20);
+        const haloR=size*(4.0+bucket*.20)*_gaiaScreenScale;
         halos[bucket].moveTo(x+haloR,y);halos[bucket].arc(x,y,haloR,0,Math.PI*2);
       }
     }
@@ -1708,7 +1731,7 @@ if(_gaiaDichte&&_gaiaDichte.sample&&!_gaiaDichteGpuMoeglich&&(window.skyMagBase|
        aufgeloesten Gaia-Sterne auch mit dem dunkeladaptierten Auge sichtbar. */
     g.filter=`blur(${Math.max(2.4,5.8*PX/Math.sqrt(tiefenZoom))}px)`;
     for(let b=0;b<halos.length;b++){
-      g.globalAlpha=Math.min(.30,fade*nightF*fluxAusgleich*.0062*Math.pow(1.20,b));
+      g.globalAlpha=Math.min(.30,fade*nightF*fluxAusgleich*.0062*Math.pow(1.20,b))*_gaiaScreenScale;
       g.fill(halos[b]);
     }
     /* Struktur-Pass: deutlich schwaecher und feiner. So bleiben Verdichtungen
@@ -1716,7 +1739,7 @@ if(_gaiaDichte&&_gaiaDichte.sample&&!_gaiaDichteGpuMoeglich&&(window.skyMagBase|
        Stichprobenpunkte als digitales Rauschen erscheinen. */
     g.filter=`blur(${Math.max(1.25,2.35*PX/Math.sqrt(tiefenZoom))}px)`;
     for(let b=0;b<halos.length;b++){
-      g.globalAlpha=Math.min(.11,fade*nightF*fluxAusgleich*.00155*Math.pow(1.18,b));
+      g.globalAlpha=Math.min(.11,fade*nightF*fluxAusgleich*.00155*Math.pow(1.18,b))*_gaiaScreenScale;
       g.fill(halos[b]);
     }
     g.filter="none";g.restore();
@@ -1880,15 +1903,16 @@ if(op!==curOp){g.globalAlpha=op;curOp=op}if(rad<1.1||rad<=rbg*.96){g.fillRect(x-
   const _gaiaGpuTief=new Map(),_gaiaGpuKataloge=_GAIA?[_GAIA]:[];
   if(!_gaiaFast){const gesehen=new Set();for(const zk of _sichtZellen){const tief=_gaiaStreamFuerZelle(zk);if(tief){_gaiaGpuTief.set(zk,tief);if(!gesehen.has(tief)){gesehen.add(tief);_gaiaGpuKataloge.push(tief)}}}}
   if(!_GAIA)_gaiaGLHide();
-  /* Eine reine Vertikalgeste darf die teure Gaia-Projektion waehrend des
-     Ziehens auslassen. Alle anderen Ebenen werden trotzdem normal gezeichnet.
-     Erst beim Loslassen wird Gaia fuer den endgueltigen Ausschnitt erneuert. */
-  const _gaiaGpuHold=window.__gaiaVerticalPan===true&&_gaiaGL.canvas&&_gaiaGL.canvas.style.display!=="none"&&_gaiaGL.count>0;
-  const _gaiaGpuDensity=_gaiaDichteGpuMoeglich&&_gaiaDichte&&(window.skyMagBase||6.5)>=6.49&&nightF>.18&&!_gaiaFast?_gaiaDichte:null;
-  const _gaiaGpuBase=!!_GAIA&&(_gaiaGpuHold||_gaiaGLDraw(_gaiaGpuKataloge,{M:_gM,cosLST,sinLST,sinPhi,cosPhi,
+  /* Die vorab berechnete Gaia-Leuchtdichte ist klein und bleibt bei jeder
+     Interaktion aktiv. Sie wird auch bei vertikalen Richtungsbewegungen neu
+     projiziert, statt ein altes WebGL-Bild festzuhalten. Dadurch verschwindet
+     die Milchstraße weder beim Klicken noch beim Schwenken oder Zeitstellen. */
+  const _gaiaGpuDensity=_gaiaDichteGpuMoeglich&&_gaiaDichte&&(window.skyMagBase||6.5)>=6.49&&nightF>.18?_gaiaDichte:null;
+  const _gaiaGpuBase=!!_GAIA&&_gaiaGLDraw(_gaiaGpuKataloge,{M:_gM,cosLST,sinLST,sinPhi,cosPhi,
     panX,panY,twoOverPiR,rf2:_rf2,rsA:_rsA,rcA:_rcA,rcc:_rcc,rsc:_rsc,ORX,ORY,
     vx0,vx1,vy0,vy1,cullX:_cullX,cullY:_cullY,cullZ:_cullZ,cullCos:_cullCos,lim:_gaiaGpuLimit,stride:_gaiaLODStride,zoom:zEff,real:_rm,
-    allowBelow:_rm&&orientMode,night:nightF,point:_rm?rbg:1.25*PX,density:_gaiaGpuDensity}));
+    allowBelow:_rm&&orientMode,night:nightF,point:_rm?rbg:1.25*PX,
+    densityScreen:_gaiaScreenScale,density:_gaiaGpuDensity});
   /* Tiefe Sichtfeldkacheln niemals waehrend einer Schwenkgeste durchlaufen.
      Gerade bei "dunkel" enthielten sie hunderttausende Quellen, die der
      Fast-Magnitude-Filter anschliessend ohnehin verwarf. Das volle Bild wird
@@ -2162,7 +2186,10 @@ function __astronomyFrameInterval(){const s=Math.abs(speed),p=window.__devicePer
      Kontrastkante von Sonne und Horizont macht Positionsspruenge dagegen besonders
      sichtbar; deshalb hier 60-Hz-Ziel. Auch die Nacht laeuft auf mittleren und
      schnellen Geraeten mit 60 Hz, damit Namen und Linien nicht gegenueber den
-     GPU-Sternen stufig wandern; schwache Geraete bleiben bei rund 42 Hz. */if(__fastTimeIsDaylight())return 16;return p==="low"?24:16}if(s>=900)return p==="low"?33:p==="high"?16:24;if(s>=60)return p==="low"?24:16;if(s>1)return p==="low"?67:p==="high"?33:50;return 0}
+     GPU-Sternen stufig wandern; schwache Geraete bleiben bei rund 42 Hz. */if(__fastTimeIsDaylight())return 16;return p==="low"?24:16}if(s>=900)return p==="low"?33:p==="high"?16:24;if(s>=60)return p==="low"?24:16;/* Auch die normale Startgeschwindigkeit muss Namen und Objekte im selben
+     flüssigen Bildtakt bewegen. Die vorherigen 50–67 ms (15–20 Hz) waren als
+     deutliches Hinterherspringen sichtbar. Nur als schwach erkannte Geräte
+     werden auf rund 30 Hz begrenzt; alle anderen nutzen den vorhandenen RAF. */if(s>1)return p==="low"?33:16;return 0}
 function __requestPlanetariumFrame(){
   if(__loopPending||document.hidden)return;
   __loopPending=true;
@@ -2178,6 +2205,47 @@ function __requestSettledSkyFrame(){
 }
 window.requestSettledSkyFrame=__requestSettledSkyFrame;
 window.requestPlanetariumFrame=__requestPlanetariumFrame;
+function __requestOptimalSkyFrame(){
+  interacting=0;window.__gaiaVerticalPan=false;window.__gaiaTimeAdjusting=false;
+  clearTimeout(__settledSkyFrameTimer);
+  requestAnimationFrame(()=>{if(W)draw()});
+}
+window.requestOptimalSkyFrame=__requestOptimalSkyFrame;
+/* Diese drei Grundfunktionen sind keine laufenden Gesten. Nach ihrem Klick darf
+   deshalb niemals ein reduziertes Vorschau-LOD stehen bleiben. */
+document.addEventListener("click",e=>{
+  const id=e.target&&e.target.closest?e.target.closest("#bhome,#borient,#bview,#bview-fs")?.id:null;
+  if(id){
+    /* Die Hauptschalter steuern Ansichten des Himmels und dürfen den Benutzer
+       nicht auf der Didaktik- oder Bedienseite stehen lassen. */
+    if(typeof scrollToSky==="function")scrollToSky();
+    queueMicrotask(__requestOptimalSkyFrame);
+  }
+},{capture:true});
+/* Zeitregler und Zeitgesten behalten die vorab berechnete Gaia-Dichte sichtbar.
+   Nach dem Loslassen wird einmal das vollständige Qualitätsbild gezeichnet. */
+window.__gaiaTimeAdjusting=false;
+function __beginGaiaTimeAdjustment(){window.__gaiaTimeAdjusting=true;__requestPlanetariumFrame()}
+function __endGaiaTimeAdjustment(){
+  if(!window.__gaiaTimeAdjusting)return;
+  /* Kein Zwischenbild ohne Milchstraße erzeugen: Die schnelle Dichteebene bleibt
+     bis zum vollständigen Abschlussbild aktiv und wird erst unmittelbar davor
+     aus dem Zeitgestenmodus entlassen. */
+  clearTimeout(__settledSkyFrameTimer);
+  __settledSkyFrameTimer=setTimeout(()=>{
+    interacting=0;window.__gaiaTimeAdjusting=false;if(W)draw();
+  },90);
+}
+(function bindGaiaTimeControls(){
+  const ids=new Set(["sTime","dayslider","yearslider"]);
+  document.addEventListener("pointerdown",e=>{
+    if((e.target&&ids.has(e.target.id))||(e.target===cv&&zoom<=1&&viewMode!=="real"))__beginGaiaTimeAdjustment();
+  },{passive:true});
+  document.addEventListener("input",e=>{if(e.target&&ids.has(e.target.id)){__beginGaiaTimeAdjustment();__requestPlanetariumFrame()}},{passive:true});
+  document.addEventListener("change",e=>{if(e.target&&ids.has(e.target.id))__endGaiaTimeAdjustment()},{passive:true});
+  window.addEventListener("pointerup",__endGaiaTimeAdjustment,{passive:true});
+  window.addEventListener("pointercancel",__endGaiaTimeAdjustment,{passive:true});
+})();
 ["pointerdown","wheel","input","change","keydown"].forEach(type=>{
   window.addEventListener(type,__requestPlanetariumFrame,{passive:true});
 });
@@ -2208,7 +2276,48 @@ function onLat(){
   const il=document.getElementById("i-lat");if(il)il.value=lat.toFixed(1);
   updateLocDisp(null,lat,lng);updateTimezone();updLabels();
 }function onSlLng(){lng=+document.getElementById("sLng").value;selCity=null;document.querySelectorAll(".cbtn").forEach(b=>b.classList.remove("sel"));const ig=document.getElementById("i-lng");if(ig)ig.value=lng.toFixed(1);updateLocDisp(null,lat,lng);updateTimezone();updLabels()}function onDaySlider(){simDay=+document.getElementById("dayslider").value;updLabels()}function yearLabel(y){return y<=0?(-y+1)+" v. Chr.":y+" n. Chr."}function yearShort(y){return y<=0?(-y+1)+" v. Chr.":""+y}function syncYearUI(){const ys=document.getElementById("yearslider");if(ys)ys.value=Math.max(-3e3,Math.min(8e3,simYear));const ds=document.getElementById("dayslider");if(ds){ds.max=daysInYear(simYear);ds.value=Math.max(1,Math.min(daysInYear(simYear),simDay))}const ytxt=yearShort(simYear);const ly=document.getElementById("lYear");if(ly)ly.textContent=ytxt;const yd=document.getElementById("yb-display");if(yd){yd.textContent=ytxt;yd.title="Jahr "+ytxt+" · antippen zum Eingeben"}}function stepDay(n){simDay+=n;while(simDay>daysInYear(simYear)){simDay-=daysInYear(simYear);simYear++}while(simDay<1){simYear--;simDay+=daysInYear(simYear)}syncYearUI();updateTimezone();updLabels()}function onYearSlider(){simYear=+document.getElementById("yearslider").value;if(simYear===0)simYear=-1;if(simDay>daysInYear(simYear))simDay=daysInYear(simYear);syncYearUI();updateTimezone();updLabels()}function stepYear(n){simYear=Math.max(-3e3,Math.min(8e3,simYear+n));if(simYear===0)simYear+=n>=0?1:-1;if(simDay>daysInYear(simYear))simDay=daysInYear(simYear);syncYearUI();updateTimezone();updLabels()}function promptYear(){const inp=prompt("Jahr eingeben: 2026 oder 1 v.Chr. als -1 (kein Jahr 0):",simYear);if(inp===null)return;let y=parseInt(String(inp).replace(/[^0-9+\-]/g,""),10);if(!isNaN(y)&&y>=-5e3&&y<=12e3){if(y===0)y=-1;simYear=y;if(simDay>daysInYear(simYear))simDay=daysInYear(simYear);syncYearUI();updateTimezone();updLabels()}}function findEclipse(dir,type){const startJD=currentJD();let jd=startJD+dir*.7;for(let i=0;i<2e4;i++){jd+=dir*.25;const el=moonElong(jd);const near=type==="solar"?el<5||el>355:Math.abs(el-180)<5;if(near){let best=jd,bestD=999;for(let dd=-.5;dd<=.5;dd+=.02){const e2=moonElong(jd+dd);const d=type==="solar"?Math.min(e2,360-e2):Math.abs(e2-180);if(d<bestD){bestD=d;best=jd+dd}}const lat0=Math.abs(moonEcl(best).lat);const thr=type==="solar"?1.4:1.5;if(lat0<thr&&Math.abs(best-startJD)>.5){if(type==="lunar"){let msep=1e9,mj=best;for(let dd=-.5;dd<=.5;dd+=.01){const mec=moonEcl(best+dd);const shLon=(sunLon(best+dd)+180)%360;let dLon=(mec.lon-shLon+540)%360-180;const sp=Math.hypot(dLon,mec.lat);if(sp<msep){msep=sp;mj=best+dd}}const mtU=moonTopo(mj);const mRu=Math.atan(1737.4/mtU.dist)*180/Math.PI;if(msep>=.7+mRu){jd=best+dir*15;continue}best=mj}if(type==="lunar"){const mt=moonTopo(best);const lstE=((GAST(best)+lng)%360+360)%360;const phi=lat*Math.PI/180;const altOf=(raH,decD)=>{const H=(lstE-raH*15)*Math.PI/180,dr=decD*Math.PI/180;return Math.asin(Math.sin(phi)*Math.sin(dr)+Math.cos(phi)*Math.cos(dr)*Math.cos(H))*180/Math.PI};const moonAlt=altOf(mt.ra,mt.dec);const srd=ecl2rd(sunLon(best),0,best);const sunAlt=altOf(srd.ra,srd.dec);if(!(moonAlt>0&&sunAlt<0)){jd=best+dir*15;continue}}if(type==="solar"){let bt=best,bd=1e9;for(let mm=-90;mm<=90;mm+=1){const j=best+mm/1440;const srd=ecl2rd(sunLon(j),0,j);const mt=moonTopo(j);const r1=srd.ra*15*Math.PI/180,d1=srd.dec*Math.PI/180,r2=mt.ra*15*Math.PI/180,d2=mt.dec*Math.PI/180;const sep=Math.acos(Math.max(-1,Math.min(1,Math.sin(d1)*Math.sin(d2)+Math.cos(d1)*Math.cos(d2)*Math.cos(r1-r2))))*180/Math.PI;if(sep<bd){bd=sep;bt=j}}for(let ss=-60;ss<=60;ss+=.1){const j=bt+ss/1440;const srd=ecl2rd(sunLon(j),0,j);const mt=moonTopo(j);const r1=srd.ra*15*Math.PI/180,d1=srd.dec*Math.PI/180,r2=mt.ra*15*Math.PI/180,d2=mt.dec*Math.PI/180;const sep=Math.acos(Math.max(-1,Math.min(1,Math.sin(d1)*Math.sin(d2)+Math.cos(d1)*Math.cos(d2)*Math.cos(r1-r2))))*180/Math.PI;if(sep<bd){bd=sep;bt=j}}const sepRadii=j=>{const srd=ecl2rd(sunLon(j),0,j);const mt=moonTopo(j);const r1=srd.ra*15*Math.PI/180,d1=srd.dec*Math.PI/180,r2=mt.ra*15*Math.PI/180,d2=mt.dec*Math.PI/180;const sep=Math.acos(Math.max(-1,Math.min(1,Math.sin(d1)*Math.sin(d2)+Math.cos(d1)*Math.cos(d2)*Math.cos(r1-r2))))*180/Math.PI;const mR=Math.atan(1737.4/mt.dist)*180/Math.PI;const Tsun=(j-2451545)/36525,Msun=(357.52911+35999.05029*Tsun)*Math.PI/180;const sR=.2666/(1.000001018*(1-.01671123*Math.cos(Msun)));return sep-(sR+mR)};let c1=bt;for(let mm=0;mm<=180;mm++){const j=bt-mm/1440;if(sepRadii(j)>=0){c1=j;break}c1=j}return c1-6/1440}const lunarContact=j=>{const mec=moonEcl(j);const shLon=(sunLon(j)+180)%360;let dLon=(mec.lon-shLon+540)%360-180;const sep=Math.hypot(dLon,mec.lat);const mt=moonTopo(j);const mR=Math.atan(1737.4/mt.dist)*180/Math.PI;return sep-(.7+mR)};let c1=best;for(let mm=0;mm<=240;mm++){const j=best-mm/1440;if(lunarContact(j)>=0){c1=j;break}c1=j}let startJump=c1-6/1440;{const phi=lat*Math.PI/180;const moonAltAt=j=>{const mt=moonTopo(j);const lstE=((GAST(j)+lng)%360+360)%360;const H=(lstE-mt.ra*15)*Math.PI/180,dr=mt.dec*Math.PI/180;return Math.asin(Math.sin(phi)*Math.sin(dr)+Math.cos(phi)*Math.cos(dr)*Math.cos(H))*180/Math.PI};if(moonAltAt(startJump)<0){for(let mm=6;mm<=360;mm++){const j=c1-mm/1440;if(moonAltAt(j)<0){startJump=c1-(mm-1)/1440;break}}}}return startJump}jd=best+dir*15}}return null}/* ── Ort einer Sonnenfinsternis ───────────────────────────────────────────
-   Der Sprung zur nächsten Sonnenfinsternis stellte bisher nur die Zeit um und
+*/
+/* Die allgemeine Routine filtert Mondfinsternisse am lokalen Horizont zum
+   Zeitpunkt des Maximums. Das ueberspringt reale Ereignisse, deren fruehere
+   Phase noch sichtbar ist (insbesondere 28.08.2026). Fuer den Mond wird daher
+   eine rein geometrische Ereignissuche verwendet; Ort und Ansicht bleiben beim
+   anschliessenden Sprung weiterhin unveraendert. */
+const _findEclipseMitOrtsfilter=findEclipse;
+function _findGlobalLunarEclipse(dir){
+  const startJD=currentJD();let jd=startJD+dir*.7;
+  for(let i=0;i<2e4;i++){
+    jd+=dir*.25;
+    if(Math.abs(moonElong(jd)-180)>=5)continue;
+    let best=jd,bestSep=1e9;
+    for(let dd=-.55;dd<=.55;dd+=.005){
+      const j=jd+dd,mec=moonEcl(j),shadowLon=(sunLon(j)+180)%360;
+      const dLon=(mec.lon-shadowLon+540)%360-180;
+      const sep=Math.hypot(dLon,mec.lat);
+      if(sep<bestSep){bestSep=sep;best=j}
+    }
+    const mt=moonTopo(best),moonR=Math.atan(1737.4/mt.dist)*180/Math.PI;
+    if(bestSep>=.7+moonR||Math.abs(best-startJD)<=.5){jd+=dir*15;continue}
+    const contactDistance=j=>{
+      const mec=moonEcl(j),shadowLon=(sunLon(j)+180)%360;
+      const dLon=(mec.lon-shadowLon+540)%360-180;
+      const r=Math.atan(1737.4/moonTopo(j).dist)*180/Math.PI;
+      return Math.hypot(dLon,mec.lat)-(.7+r);
+    };
+    let first=best;
+    for(let mm=0;mm<=240;mm++){
+      const j=best-mm/1440;
+      if(contactDistance(j)>=0){first=j;break}
+      first=j;
+    }
+    return first-6/1440;
+  }
+  return null;
+}
+findEclipse=function(dir,type){
+  return type==="lunar"?_findGlobalLunarEclipse(dir):_findEclipseMitOrtsfilter(dir,type);
+};
+
+/* Der Sprung zur nächsten Sonnenfinsternis stellte bisher nur die Zeit um und
    ließ den Beobachtungsort stehen. Von dort aus war die Finsternis meist gar
    nicht zu sehen. Jetzt wird unter den Städten der Ortsliste diejenige gesucht,
    in der die Bedeckung am größten ist und die Sonne dabei mindestens 3° hoch
@@ -3194,7 +3303,9 @@ function orientDebugShow(e,isAbs,dir,note){
 function flashMsg(t){const pop=document.getElementById("info-pop");if(!pop)return;pop.innerHTML=`<div class="irow">${t}</div>`;pop.classList.add("show");pop.style.left="50%";pop.style.top="13%";pop.style.transform="translateX(-50%)";clearTimeout(flashMsg._t);flashMsg._t=setTimeout(()=>{pop.classList.remove("show");pop.style.transform=""},3200)}
 function norm360(a){return(a%360+360)%360}
 function screenAngleDeg(){try{if(screen.orientation&&typeof screen.orientation.angle==="number")return screen.orientation.angle||0;if(typeof window.orientation==="number")return window.orientation||0}catch(e){}return 0}
-function applyOrientView(){if(viewMode==="real"){camAz=((oAz-180)%360+360)%360;camAlt=Math.max(-89,Math.min(89,oAlt));if(typeof updateTouchMode==="function")updateTouchMode();return;}const R=(cvW||W)/2*(showTwilight?.8:.94);const altc=Math.max(-8,Math.min(89,oAlt));const Aproj=(oAz-180)*Math.PI/180;const r=(90-altc)/90*R,cx=r*Math.sin(Aproj),cy=r*Math.cos(Aproj);zoom=deviceZoom;panX=-zoom*cx;panY=-zoom*cy;updateTouchMode&&updateTouchMode()}
+function applyOrientView(){if(viewMode==="real"){/* orientDirFromEvent liefert bereits die Richtung der rueckseitigen
+   Handykamera. Die bisherige zusaetzliche Drehung um 180 Grad kehrte die
+   Himmelsrichtung ein zweites Mal um. */camAz=norm360(oAz);camAlt=Math.max(-89,Math.min(89,oAlt));zoom=1;panX=0;panY=0;if(typeof updateTouchMode==="function")updateTouchMode();return;}const R=(cvW||W)/2*(showTwilight?.8:.94);const altc=Math.max(-8,Math.min(89,oAlt));const Aproj=oAz*Math.PI/180;const r=(90-altc)/90*R,cx=r*Math.sin(Aproj),cy=r*Math.cos(Aproj);zoom=deviceZoom;panX=-zoom*cx;panY=-zoom*cy;updateTouchMode&&updateTouchMode()}
 function orientAltFromBetaGamma(beta,gamma){if(beta==null||!isFinite(beta))return 45;const b=(beta||0)*Math.PI/180,gm=(gamma||0)*Math.PI/180;let c=Math.cos(b)*Math.cos(gm);c=Math.max(-1,Math.min(1,c));/* Die Blickrichtung ist die Rueckseite des Geraets, wie bei einer Kamera. Flach
      liegend mit dem Bildschirm nach oben weist sie nach unten: Nadir, bei 52,5 Grad
      Nord also Deklination -52,5 und damit die Suedpolgegend. Flach mit dem Bildschirm
@@ -3333,7 +3444,7 @@ function toggleViewMode(){
   if(orientMode){
     disableOrient();
     if(viewMode!=="real"){
-      viewMode="real";zoom=1;panX=0;panY=0;zoomedObj=null;interacting=8;
+      viewMode="real";zoom=1;panX=0;panY=0;zoomedObj=null;interacting=0;
       setRealHome();
       try{["bview","bview-fs"].forEach(function(id){var b=document.getElementById(id);if(b){b.innerHTML='<span class="bsym">👁</span>';b.classList.add("on")}})}catch(e){}
       try{if(typeof updateTouchMode==="function")updateTouchMode()}catch(e){}
@@ -3341,22 +3452,20 @@ function toggleViewMode(){
     }
     return;
   }
-  if(viewMode==="real"){
-    viewMode="dome";zoom=1;panX=0;panY=0;zoomedObj=null;interacting=8;
-    try{["bview","bview-fs"].forEach(function(id){var b=document.getElementById(id);if(b){b.innerHTML='<span class="bsym">👁</span>';b.classList.remove("on")}})}catch(e){}
-    try{if(typeof updateTouchMode==="function")updateTouchMode()}catch(e){}
-    try{if(typeof flashMsg==="function")flashMsg("Beobachtermodus aus")}catch(e){}
-    if(W)draw();
-    return;
-  }
+  /* Der Augen-Schalter ist eine Moduswahl, kein Ein/Aus-Umschalter. Ein weiterer
+     Klick im Beobachtermodus darf deshalb nicht wieder in die komplette
+     Kuppelansicht wechseln. */
   viewMode="real";
-  zoom=1;panX=0;panY=0;zoomedObj=null;interacting=8;
+  zoom=1;panX=0;panY=0;zoomedObj=null;interacting=0;
   setRealHome();
   try{["bview","bview-fs"].forEach(function(id){var b=document.getElementById(id);if(b){b.innerHTML='<span class="bsym">👁</span>';b.classList.add("on")}})}catch(e){}
   try{if(typeof updateTouchMode==="function")updateTouchMode()}catch(e){}
   if(W)draw();
 }
-function toggleOrient(){/* Aus- und Einschalter zugleich. Laeuft der Lagemodus, wird er beendet; disableOrient
+function toggleOrient(){/* Der Schalter waehlt den Lagemodus eindeutig aus. Laeuft er bereits,
+     bleibt er aktiv; ein wiederholter Tipp darf nicht in die komplette Himmelsansicht
+     zurueckspringen. Der Wechsel zum Beobachtermodus erfolgt ueber dessen eigenen Knopf.
+     Frueher war dies ein Aus- und Einschalter: disableOrient
      stellt dabei ueber _orientVorMode die Ansicht wieder her, die vor dem Einschalten
      aktiv war — Kuppel oder Beobachter. Die frueher hier stehende Ruecksetzung auf die
      Kuppelansicht entfaellt, weil sie genau diese Erinnerung ueberschrieben haette und
@@ -3365,9 +3474,9 @@ function toggleOrient(){/* Aus- und Einschalter zugleich. Laeuft der Lagemodus, 
      der Seite (autoStartOrient) kann derselbe Tipp toggleOrient() zweimal ausloesen, wenn
      er zufaellig auf den Lagemodus-Knopf selbst trifft - der Erfassungs-Beobachter ruft es
      einmal auf, danach feuert der Knopf ganz normal seinen eigenen onclick. Waehrend die
-     Erlaubnisabfrage noch laeuft, ist orientMode noch nicht wahr, der obige Schutz greift
+     Erlaubnisabfrage noch laeuft, ist orientMode noch nicht wahr, der Schutz greift
      also nicht; ohne dieses Flag koennte iOS zweimal nach der Erlaubnis fragen und die
-     Sensor-Erkennung kaeme durcheinander. */if(orientMode){disableOrient();try{flashMsg("📱 Lage-Modus aus")}catch(e){}return}if(window.__orientPermPending)return;setPaused(false);setSpeedValue(1);ensureLiveTime();try{if(typeof DeviceOrientationEvent!=="undefined"&&typeof DeviceOrientationEvent.requestPermission==="function"){window.__orientPermPending=true;DeviceOrientationEvent.requestPermission().then(s=>{window.__orientPermPending=false;if(s==="granted")enableOrient();else{orientMode=true;document.body.classList.add("orient-mode");const b=document.getElementById("borient");if(b)b.classList.add("on");syncViewButtonsForOrient();enableOrientFallback("Bewegungssensor nicht erlaubt · manueller Lagemodus")}}).catch(()=>{window.__orientPermPending=false;orientMode=true;document.body.classList.add("orient-mode");const b=document.getElementById("borient");if(b)b.classList.add("on");syncViewButtonsForOrient();enableOrientFallback("Bewegungssensor nicht verfügbar · manueller Lagemodus")})}else if(typeof DeviceOrientationEvent!=="undefined"){enableOrient()}else{orientMode=true;document.body.classList.add("orient-mode");const b=document.getElementById("borient");if(b)b.classList.add("on");syncViewButtonsForOrient();enableOrientFallback("Kein Lagesensor · manueller Alldocube-Modus")}}catch(e){orientMode=true;document.body.classList.add("orient-mode");const b=document.getElementById("borient");if(b)b.classList.add("on");syncViewButtonsForOrient();enableOrientFallback("Lagesensor nicht verfügbar · manueller Modus")}}
+     Sensor-Erkennung kaeme durcheinander. */if(orientMode){__requestOptimalSkyFrame();return}if(window.__orientPermPending)return;setPaused(false);setSpeedValue(1);ensureLiveTime();try{if(typeof DeviceOrientationEvent!=="undefined"&&typeof DeviceOrientationEvent.requestPermission==="function"){window.__orientPermPending=true;DeviceOrientationEvent.requestPermission().then(s=>{window.__orientPermPending=false;if(s==="granted")enableOrient();else{orientMode=true;document.body.classList.add("orient-mode");const b=document.getElementById("borient");if(b)b.classList.add("on");syncViewButtonsForOrient();enableOrientFallback("Bewegungssensor nicht erlaubt · manueller Lagemodus")}}).catch(()=>{window.__orientPermPending=false;orientMode=true;document.body.classList.add("orient-mode");const b=document.getElementById("borient");if(b)b.classList.add("on");syncViewButtonsForOrient();enableOrientFallback("Bewegungssensor nicht verfügbar · manueller Lagemodus")})}else if(typeof DeviceOrientationEvent!=="undefined"){enableOrient()}else{orientMode=true;document.body.classList.add("orient-mode");const b=document.getElementById("borient");if(b)b.classList.add("on");syncViewButtonsForOrient();enableOrientFallback("Kein Lagesensor · manueller Alldocube-Modus")}}catch(e){orientMode=true;document.body.classList.add("orient-mode");const b=document.getElementById("borient");if(b)b.classList.add("on");syncViewButtonsForOrient();enableOrientFallback("Lagesensor nicht verfügbar · manueller Modus")}}
 let vrCameraStream=null,vrCameraPending=false;
 function stopVrCamera(){const v=document.getElementById("vr-camera-feed");if(v){try{v.pause()}catch(e){}v.srcObject=null}if(vrCameraStream){try{vrCameraStream.getTracks().forEach(t=>t.stop())}catch(e){}vrCameraStream=null}vrCameraPending=false;document.body.classList.remove("vr-mode");window.cameraStarOnly=false;if(window.__cameraObjectNamesBefore!==undefined){showObjectNames=window.__cameraObjectNamesBefore;delete window.__cameraObjectNamesBefore}try{syncNameLayerButtons()}catch(e){}const b=document.getElementById("bvr");if(b){b.classList.remove("on");b.setAttribute("aria-pressed","false")}if(W)draw()}
 async function toggleVrCamera(){if(vrCameraStream||document.body.classList.contains("vr-mode")){stopVrCamera();flashMsg("📷 VR-Kamera aus");return}if(vrCameraPending)return;if(!navigator.mediaDevices||typeof navigator.mediaDevices.getUserMedia!=="function"){flashMsg("⚠ Kamera nicht verfügbar · HTTPS erforderlich");return}vrCameraPending=true;try{const stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:"environment"}},audio:false});vrCameraStream=stream;const v=document.getElementById("vr-camera-feed");if(!v)throw new Error("Kameraelement fehlt");v.srcObject=stream;await v.play();if(!orientMode)toggleOrient();window.__cameraObjectNamesBefore=showObjectNames;showObjectNames=true;window.cameraStarOnly=true;document.body.classList.add("vr-mode");try{syncNameLayerButtons()}catch(e){}const b=document.getElementById("bvr");if(b){b.classList.add("on");b.setAttribute("aria-pressed","true")}if(W)draw();flashMsg("📷 Kamera an · hellste Sterne und Planeten beschriftet")}catch(e){stopVrCamera();const denied=e&&(""+e.name).match(/NotAllowed|PermissionDenied|Security/);flashMsg(denied?"⚠ Kamerazugriff nicht erlaubt":"⚠ Kamera konnte nicht gestartet werden")}finally{vrCameraPending=false}}
