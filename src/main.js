@@ -6,7 +6,7 @@ import { installLightPollutionEstimator } from "./features/location/lightPolluti
 import { installPrecessionCircleControl } from "./features/didactics/precessionCircle.js?v=20260831-keepcircle";
 import { installRuntimePerformanceProfile } from "./platform/runtimePerformance.js";
 import { installLabelCadence } from "./features/render/labelCadence.js?v=20260831-singlecanvas";
-import { createTextSpriteRenderer } from "./features/render/textSprites.js?v=20260831-atair";
+import { createTextSpriteRenderer } from "./features/render/textSprites.js?v=20260831-zoomsharp";
 
 activateDeferredStylesheets();
 
