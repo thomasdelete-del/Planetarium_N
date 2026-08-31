@@ -517,7 +517,8 @@ void main(){
   }
   if(x<u_clip.x||x>u_clip.y||y<u_clip.z||y>u_clip.w){hide();return;}
   float sx=u_screen.x+(u_real>.5?x:u_view.x+u_lod.z*x),sy=u_screen.y+(u_real>.5?y:u_view.y+u_lod.z*y);
-  gl_Position=vec4(sx/u_screen.z*2.0-1.0,1.0-sy/u_view.y*0.0-sy/u_screen.w*2.0,0.0,1.0);
+  // Never divide by panY: the normal centered view has panY == 0.
+  gl_Position=vec4(sx/u_screen.z*2.0-1.0,1.0-sy/u_screen.w*2.0,0.0,1.0);
   if(densityLayer){
     float bucket=mag,fade=clamp((3.4-u_lod.z)/2.4,0.0,1.0),flux=max(1.0,-a_density);
     /* Canvas-filter: blur() verteilt die Energie eines Samples auf eine grosse
@@ -3022,7 +3023,7 @@ function setSpeedValue(sp){
   if(ss){ss.value=Math.round(Math.log(Math.max(1,sp))/Math.log(3600)*1000)}
   const ls=document.getElementById("lSpd");
   if(ls){
-    if(sp>=3600)ls.textContent="1h/s";else if(sp>=60)ls.textContent=(sp/60).toFixed(sp<600?1:0)+"min/s";else ls.textContent=Math.round(sp)+"×";
+    if(sp>=86400)ls.textContent=(sp/86400)+" Tag/s";else if(sp>=3600)ls.textContent=(sp/3600)+"h/s";else if(sp>=60)ls.textContent=(sp/60).toFixed(sp<600?1:0)+"min/s";else ls.textContent=Math.round(sp)+"×";
   }
 }
 function sceneRun(sp){setTimeout(()=>{if(typeof setPaused==="function")setPaused(false);setSpeedValue(sp||600);if(W)draw();/* Der Sprung kann den vorher pausierten RAF-Zyklus beendet haben. Ein
@@ -3111,13 +3112,17 @@ function pointObserverAtSun(){
     try{if(typeof __requestSettledSkyFrame==="function")__requestSettledSkyFrame()}catch(e){}
   }catch(e){}
 }
-function jumpMoonPhase(targetDeg,label){
+function jumpMoonPhase(targetDeg,label,targetView="real"){
   beginAtomicSkyJump(420);
   const jd0=findNextMoonPhase(targetDeg);
   const jd=findMoonTransitNear(jd0);
   setSceneFromJD(52.52,13.405,jd,label||"Berlin");
-  pointObserverAtMoon();
-  showToast(label+" · Mond im Meridian · Beobachtermodus");
+  if(targetView==="dome"){
+    viewMode="dome";zoom=1;panX=0;panY=0;zoomedObj=null;
+    syncViewModeButtons();
+    if(typeof updateTouchMode==="function")updateTouchMode();
+  }else pointObserverAtMoon();
+  showToast(label+" · Mond im Meridian · "+(targetView==="dome"?"Himmelsansicht":"Beobachtermodus"));
 }
 function startYearSimulation(dir,stepDays){
   if(typeof window.setYearPlay==="function")window.setYearPlay(true,dir||1);
@@ -3377,8 +3382,16 @@ function jumpScene(id){
   if(id==="first-quarter")return jumpMoonPhase(90,"Erstes Viertel · Berlin");
   if(id==="full-moon")return jumpMoonPhase(180,"Vollmond · Berlin");
   if(id==="last-quarter")return jumpMoonPhase(270,"Letztes Viertel · Berlin");
-  if(id==="sim-daily-rotation"){setScene(52.52,13.405,3,20,21*60,"Berlin");sceneRun(900);return}
-  if(id==="sim-moon-phases"){jumpMoonPhase(0,"Mondphasenlauf · Neumond");sceneRun(21600);return}
+  if(id==="sim-daily-rotation"){
+    setScene(52.52,13.405,3,20,21*60,"Berlin");
+    // Set the final camera inside setScene's atomic jump, on phones as on desktop.
+    // setScene has already disabled orientation and cleared zoom/pan/object focus.
+    viewMode="real";setRealHome();
+    ["bview","bview-fs"].forEach(id=>{const b=document.getElementById(id);if(b)b.classList.add("on")});
+    if(typeof updateTouchMode==="function")updateTouchMode();
+    sceneRun(900);return;
+  }
+  if(id==="sim-moon-phases"){jumpMoonPhase(180,"Mondphasenlauf · Vollmond","dome");sceneRun(86400);return}
   if(id==="sim-precession"){setScene(52.52,13.405,12,21,0,"Berlin",1);viewMode="dome";if(typeof syncViewModeButtons==="function")syncViewModeButtons();if(typeof showZodiac!=="undefined")showZodiac=true;window.__zodiacOn=true;setTimeout(()=>{if(typeof window.setYearPlay==="function")window.setYearPlay(true,1);showToast("Präzessions-Jahreslauf gestartet")},300);return}
   if(id==="sim-polar-day"){setScene(66.563,getCurrentPolarLng(),6,21,0,"Polarkreis 66,56° N · aktuelle Länge");sceneRun(3600);return}
   if(id==="sim-seasons"){setScene(52.52,13.405,3,20,12*60,"Berlin");setTimeout(()=>{if(typeof window.setYearPlay==="function")window.setYearPlay(true,1);showToast("Jahreszeitenlauf gestartet")},300);return}
