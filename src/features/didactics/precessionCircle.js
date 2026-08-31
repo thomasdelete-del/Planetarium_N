@@ -11,13 +11,18 @@ function syncButton() {
   button.setAttribute("aria-pressed", String(visible));
   button.title = automatic
     ? "Präzessionskreis ist in dieser Präzessions-Didaktik automatisch sichtbar"
-    : "Präzessionskreis manuell ein-/ausblenden";
+    : "Präzessionskreis anzeigen; erneut drücken: Zoom auf ganzen Himmel zurücksetzen";
 }
 
 export function installPrecessionCircleControl() {
   window.showPrecessionCircle = false;
   window.togPrecessionCircle = () => {
-    window.showPrecessionCircle = window.showPrecessionCircle !== true;
+    // Zurückschalten beendet nur die Vergrößerung, nicht die Darstellung.
+    if (automaticPrecessionView() || window.showPrecessionCircle === true) {
+      window.__planetariumLegacy?.set("zoom", 1);
+    } else {
+      window.showPrecessionCircle = true;
+    }
     syncButton();
     window.draw?.();
   };

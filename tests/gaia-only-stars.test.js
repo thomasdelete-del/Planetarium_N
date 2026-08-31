@@ -12,7 +12,7 @@ test("background star generator is disabled in favor of Gaia DR3", () => {
 });
 
 test("Gaia visibility depth follows zoom and catalog depth", () => {
-  assert.match(core, /if\(basis>=6\.49\)return katalogMax/);
+  assert.match(core, /if\(_planetGaiaMaximum\(\)\|\|basis>=6\.49\)return katalogMax/);
   assert.match(core, /Math\.log10\(m\)/);
   assert.match(core, /let bgLimit=Math\.min\(15\.5,_gaiaGrenzmag\(zEff\)\)/);
   assert.doesNotMatch(core, /\(zEff-1\)\*\.62/);
@@ -54,10 +54,11 @@ test("Gaia interaction LOD also applies at dark sites", () => {
   assert.doesNotMatch(core, /_gaiaFast&&\(window\.skyMagBase\|\|6\.5\)<6\.49/);
 });
 
-test("vertical panning defers Gaia reprojection until gesture end", () => {
+test("vertical panning keeps Gaia density projected and finishes with a quality frame", () => {
   assert.match(core, /const active=new Map\(\)/);
   assert.match(core, /start\.vertical=Math\.abs\(dy\)>Math\.abs\(dx\)\*1\.15/);
-  assert.match(core, /const _gaiaGpuHold=window\.__gaiaVerticalPan===true/);
+  assert.doesNotMatch(core, /const _gaiaGpuHold=window\.__gaiaVerticalPan===true/);
+  assert.match(core, /density:_gaiaGpuDensity/);
   assert.doesNotMatch(core, /draw=function\(\)\{if\(window\.__gaiaVerticalPan\)return/);
   assert.match(core, /window\.__gaiaVerticalPan=false;[\s\S]*?__requestSettledSkyFrame\(\)/);
   assert.match(core, /cv\.addEventListener\("wheel",__requestSettledSkyFrame/);
@@ -127,14 +128,10 @@ test("orientation mode renders Gaia through the persistent GPU pipeline", () => 
   assert.match(core, /if\(orientMode\)gl\.finish\(\);else gl\.flush\(\)/);
 });
 
-test("labels and constellation lines follow every rendered fast-time frame", () => {
-  assert.match(labelCadence, /Math\.abs\(Number\(legacy\.get\("speed"\)\) \|\| 0\) >= 900/);
-  assert.match(labelCadence, /legacy\.get\("orientMode"\) === true\)[\s\S]*?document\.body\.classList\.contains\("orient-mode"\)/);
-  assert.match(labelCadence, /if \(orientationSky\) \{[\s\S]*?canvas\.style\.display = "none";[\s\S]*?return drawContext\.next/);
-  assert.match(labelCadence, /const refresh = force \|\| fastSky \|\| now - lastFrame >= intervalMs/);
-  assert.match(labelCadence, /let layerPrepared = !refresh/);
-  assert.match(labelCadence, /const prepareLayer = \(\) => \{[\s\S]*?context\.clearRect/);
-  assert.doesNotMatch(labelCadence, /if \(refresh\) \{\s*force = false;\s*lastFrame = now;\s*context\.setTransform/);
+test("labels and constellation lines use the main canvas in every frame", () => {
+  assert.match(labelCadence, /return context.next\(\.\.\.context.args\)/);
+  assert.doesNotMatch(labelCadence, /createElement\("canvas"\)|canvas.animate|source.fillText\s*=|source.stroke\s*=/);
+  assert.match(labelCadence, /intervalMs: 0/);
 });
 
 test("orientation mode always enables names and constellation lines", () => {

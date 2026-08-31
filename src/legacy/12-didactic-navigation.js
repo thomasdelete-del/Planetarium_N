@@ -141,8 +141,19 @@
   var HELP_CONST={t:"Sternbild-Ansicht",s:"Sternbilder sind zufällige, rein perspektivische Muster — die Sterne darin liegen in ganz unterschiedlichen Entfernungen.",d:"Ein Sternbild ist keine reale räumliche Gruppierung, sondern eine willkürliche, von Menschen erdachte Verbindung von Sternen, die von der Erde aus zufällig in einer ähnlichen Himmelsrichtung erscheinen — tatsächlich liegen sie oft Dutzende bis Tausende Lichtjahre unterschiedlich weit entfernt. Aus einem anderen Blickwinkel im Weltraum betrachtet, würde dieselbe Sterngruppe völlig anders aussehen. Die \"Kulmination\", auf die diese App beim Sprung einstellt, ist der Zeitpunkt, an dem ein Himmelskörper seine größte Höhe über dem Horizont erreicht — für einen Beobachter meist der günstigste Beobachtungszeitpunkt, weil der Blick dann am wenigsten durch dichte, unruhige und lichtverschmutzte horizontnahe Luftschichten geht."};
   var HELP_MW={t:"Milchstraßenzentrum",s:"Der Blick Richtung Schütze/Skorpion zeigt zum Zentrum unserer Galaxis, rund 26.000 Lichtjahre entfernt.",d:"Unsere Sonne liegt nicht im Zentrum der Milchstraße, sondern rund 26.000 Lichtjahre davon entfernt in einem äußeren Spiralarm. Blickt man Richtung Sternbild Schütze (nahe der Grenze zum Skorpion), schaut man direkt auf das galaktische Zentrum, in dem sich ein supermassereiches Schwarzes Loch (Sagittarius A*, rund 4 Millionen Sonnenmassen) befindet. Die als heller Streifen sichtbare Milchstraße ist dabei nichts anderes als der Blick von innen auf die flache Scheibe unserer eigenen Galaxie — die vielen einzelnen, mit bloßem Auge nicht auflösbaren Sterne verschmelzen zu diesem diffusen Lichtband."};
 
+  const PLANET_HELP={
+    merkur:{t:"Merkur",s:"Merkur bleibt am Himmel nahe bei der Sonne und ist meist nur in der Dämmerung zu sehen.",d:"Als innerer Planet zeigt Merkur Phasen. Seine scheinbare Größe und der beleuchtete Anteil ändern sich mit der Stellung zu Erde und Sonne. Der Planetensprung sucht eine günstige erreichbare Sichtbarkeit; eine völlig dunkle Nacht ist für Merkur häufig nicht möglich."},
+    venus:{t:"Venus",s:"Venus erscheint als heller Morgen- oder Abendstern und zeigt im Fernrohr Phasen.",d:"Venus umkreist die Sonne innerhalb der Erdbahn. In Erdnähe erscheint ihre Scheibe groß, aber oft nur als schmale Sichel; auf der fernen Seite ihrer Bahn kleiner und stärker beleuchtet. Ihre dichte Wolkendecke verdeckt die Oberfläche. Der Sprung berücksichtigt ihre begrenzte Entfernung von der Sonne am Himmel."},
+    mars:{t:"Mars",s:"Mars fällt durch seine rötliche Farbe auf. Seine scheinbare Größe hängt stark vom Abstand zur Erde ab.",d:"Die rote Färbung geht auf eisenoxidhaltigen Staub zurück. Günstige Beobachtungsbedingungen ergeben sich um die Opposition, wenn Mars der Sonne am Himmel gegenübersteht. Wegen der elliptischen Bahnen ist nicht jede Opposition gleich günstig. Die vergrößerte Ansicht dient zur Orientierung; erkennbare Details hängen in der Wirklichkeit auch von Teleskop und Luftunruhe ab."},
+    jupiter:{t:"Jupiter",s:"Jupiter ist ein Gasriese mit Wolkenbändern und vier besonders auffälligen großen Monden.",d:"Io, Europa, Ganymed und Kallisto verändern ihre Stellung zu Jupiter fortlaufend. Die sichtbaren Bänder gehören zur Atmosphäre, nicht zu einer festen Oberfläche. Um die Opposition ist Jupiter besonders gut über längere Teile der Nacht beobachtbar. Die Hintergrundsterne helfen, seine Bewegung am Himmel zu verfolgen."},
+    saturn:{t:"Saturn",s:"Saturn ist an seinem Ringsystem zu erkennen. Dessen scheinbare Öffnung verändert sich im Lauf seiner Sonnenumrundung.",d:"Die Ringe bestehen aus zahlreichen einzelnen Teilchen, überwiegend aus Wassereis. Je nach Blickwinkel von der Erde sehen wir sie weit geöffnet oder nahezu von der Kante. Die Planetensicht zeigt Saturn vergrößert; die tatsächliche Erkennbarkeit der Ringe hängt auch von der verwendeten Optik ab."},
+    uranus:{t:"Uranus",s:"Uranus ist ein ferner Eisriese, der im Fernrohr als kleine bläulich-grüne Scheibe erscheint.",d:"Methan in seiner Atmosphäre absorbiert einen Teil des roten Lichts. Seine stark geneigte Rotationsachse führt zu ausgeprägten Jahreszeiten. Wegen seiner geringen scheinbaren Größe ist Uranus leicht mit einem Stern zu verwechseln; die Position vor den Gaia-Hintergrundsternen erleichtert die Zuordnung."},
+    neptun:{t:"Neptun",s:"Neptun ist lichtschwach und benötigt zur Beobachtung optische Hilfsmittel.",d:"Der ferne Eisriese erscheint nur als sehr kleine bläuliche Scheibe. Seine Bewegung vor den Hintergrundsternen ist langsam. Beim Planetensprung helfen die Gaia-Sterne, das richtige Gesichtsfeld zu erkennen. Die starke Bildschirmvergrößerung entspricht nicht der Detailfülle, die ein beliebiges Teleskop liefern kann."}
+  };
   function findHelpContent(){
     var id=window.__lastJumpId||"";
+    // Das konkrete Sprungziel hat Vorrang vor standortabhängigen Erklärungen.
+    if(id.startsWith("planet-")&&PLANET_HELP[id.slice(7)])return PLANET_HELP[id.slice(7)];
     var OBS_KEYS={"obs-equator-spring":1,"obs-equator-summer":1,"obs-tropic-spring":1,"obs-tropic-summer":1,"obs-arctic-spring":1,"obs-arctic-summer":1,"obs-northpole-spring":1,"obs-northpole-summer":1,"obs-southpole-northsummer":1,"obs-northpole-winter":1};
     if(OBS_KEYS[id])return HELP_ID[id];
     var didConst=typeof focusConstellation!=="undefined" && !!focusConstellation;
@@ -217,6 +228,7 @@
     try{ if(typeof setPaused==='function') setPaused(true); }catch(_){ }
   }
   window.returnToDidacticPage=function(){
+    window.__closeEclipseNavigation?.();
     window.__viewModeUserChosen=false;
     stopDidacticRuns();
     try{ if(typeof window.leaveRealView==="function") window.leaveRealView(); }catch(_){ }
@@ -253,7 +265,14 @@
     const old=window[name] || (typeof globalThis[name]==='function'?globalThis[name]:null);
     if(old && !window['__v9DidacticBackClear_'+name]){
       window['__v9DidacticBackClear_'+name]=true;
-      window[name]=globalThis[name]=function(){showDidacticBack(false);return old.apply(this,arguments);};
+      window[name]=globalThis[name]=function(){
+        if(name==='homeView'||name==='setNow'){
+          window.__closeEclipseNavigation?.();
+          const chips=document.getElementById('didactic-chips');
+          if(chips)chips.style.display='none';
+        }
+        showDidacticBack(false);return old.apply(this,arguments);
+      };
     }
   });
   ensureDidacticBackButton();

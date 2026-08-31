@@ -1,9 +1,15 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="de" class="sensor-starting">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>Planetarium · Version 11</title>
+<style>
+html.sensor-starting body>*{visibility:hidden!important}
+html.sensor-starting #sensor-start,html.sensor-starting #sensor-start *{visibility:visible!important}
+#sensor-start{position:fixed;inset:0;z-index:99999;background:#050810;color:#e5eaf2;display:grid;place-content:center;text-align:center;padding:24px;font:16px system-ui}
+#sensor-start-button{padding:12px 20px;font:inherit}
+</style>
 <script>
 window.addEventListener("error",event=>{document.documentElement.dataset.bootError=event.message||"Skriptfehler"});
 window.addEventListener("unhandledrejection",event=>{document.documentElement.dataset.bootError=String(event.reason&&event.reason.message||event.reason||"Promise-Fehler")});
@@ -21,10 +27,11 @@ if(location.protocol==="file:"){
 <link rel="stylesheet" href="./src/styles/legacy.css">
 </head>
 <body>
+<div id="sensor-start" role="status"><p id="sensor-start-status">Lagesensor wird geprüft …</p><button id="sensor-start-button" type="button" hidden>Sensor prüfen und starten</button></div>
 <div id="scroller">
 <section id="page-jumps" class="snap">
   <div class="jump-shell">
-    <div class="jump-title"><span class="title-main">Planetarium</span><span class="title-build">Version 11.28 · Build 20260827a · freigegeben</span></div>
+    <div class="jump-title"><span class="title-main">Planetarium</span><span class="title-build">Version 11.29 · Build 20260831a · freigegeben</span></div>
     <div class="jump-sub">Didaktische Sprünge, Simulationen und Sternbild-Lernmodus. Jeder Schalter setzt Ort, Datum und Uhrzeit astronomisch plausibel und springt direkt zur Sternkarte.</div>
     <button class="jump-home" data-scene-id="current">🏠 Aktueller Himmel ▾</button>
 
@@ -138,7 +145,7 @@ if(location.protocol==="file:"){
   </div>
 </section>
 <section id="page-sky" class="snap">
-<header><h1>Planetarium</h1><p>Version 11.28 · Build 20260827a · freigegeben</p><div id="verinfo">Version 11.28 · Build 20260827a · freigegeben</div></header>
+<header><h1>Planetarium</h1><p>Version 11.29 · Build 20260831a · freigegeben</p><div id="verinfo">Version 11.29 · Build 20260831a · freigegeben</div></header>
 <div id="readout">–</div>
 <div id="year-bar">
   <button class="yb-btn" id="yb-back" title="1 Jahr zurück · halten: 10, dann 100 Jahre">◂</button>
@@ -165,7 +172,7 @@ if(location.protocol==="file:"){
 <section id="page-panel" class="snap">
 <div id="panel-bar" data-action="scroll-to-sky"><span class="lg-title">🎛 Planetarium</span><button id="panel-close" data-action="scroll-to-sky" title="zurück zum Himmel">✕</button></div>
 <div id="panel-body">
-<div class="panel-sub">Simulierter Sternenhimmel · Tippen · Zoom · Karte<br>Version 11.28 · Build 20260827a · freigegeben</div>
+<div class="panel-sub">Simulierter Sternenhimmel · Tippen · Zoom · Karte<br>Version 11.29 · Build 20260831a · freigegeben</div>
 <div class="ctrls">
   <button class="btn on" id="ba" data-action="toggle-animation">⏸ Pause</button>
   <button class="btn" data-action="set-now">Jetzt</button>
@@ -192,7 +199,7 @@ if(location.protocol==="file:"){
   <button class="btn" data-action="jump-to-eclipse" data-direction="-1" data-eclipse-type="solar" title="Vorherige Sonnenfinsternis: wie nebenan, nur rückwärts in der Zeit">◀ <span class="ecsym">☀&#xFE0E;</span></button>
   <button class="btn" data-action="jump-to-eclipse" data-direction="1" data-eclipse-type="solar" title="Nächste Sonnenfinsternis: springt zu Datum und Uhrzeit, setzt den Ort auf die Stadt mit der größten Bedeckung, wechselt zur Himmelsansicht und blendet eine Zeile mit Datum, Stadt und Bedeckungsgrad ein"><span class="ecsym">☀&#xFE0E;</span> ▶</button>
   <button class="btn" data-action="jump-to-eclipse" data-direction="-1" data-eclipse-type="lunar" title="Vorherige Mondfinsternis: wie nebenan, nur rückwärts in der Zeit">◀ <span class="ecsym">☾&#xFE0E;</span></button>
-  <button class="btn" data-action="jump-to-eclipse" data-direction="1" data-eclipse-type="lunar" title="Nächste Mondfinsternis: springt zu Datum und Uhrzeit; der Beobachtungsort bleibt stehen, weil eine Mondfinsternis von der ganzen Nachthalbkugel aus zu sehen ist"><span class="ecsym">☾&#xFE0E;</span> ▶</button>
+  <button class="btn" data-action="jump-to-eclipse" data-direction="1" data-eclipse-type="lunar" title="Nächste Mondfinsternis: springt zum geeigneten Beobachtungsort, zum Beginn der Verdeckung und richtet den Blick auf den Mond"><span class="ecsym">☾&#xFE0E;</span> ▶</button>
 </div>
 <div id="loc-wrap">
   <div id="loc-bar">
@@ -470,13 +477,13 @@ if(location.protocol==="file:"){
     <button id="map-close" data-action="close-map">✕ Schließen</button>
   </div>
 </div>
-<script src="./src/legacy/01-core.js?v=20260827a" defer></script>
+<script src="./src/legacy/01-core.js?v=20260831a" defer></script>
 <script src="./src/legacy/00-scheduler.js" defer></script>
 
 
-<script src="./src/legacy/02-didactic-orbits.js" defer></script>
+<script src="./src/legacy/02-didactic-orbits.js?v=20260831-precessionnodes" defer></script>
 
-<script src="./src/legacy/03-location-scenes.js?v=4" defer></script>
+<script src="./src/legacy/03-location-scenes.js?v=20260829-now1" defer></script>
 
 <script src="./src/legacy/04-moon-rendering.js" defer></script>
 
@@ -485,7 +492,7 @@ if(location.protocol==="file:"){
 
 
 
-<script src="./src/legacy/06-season-refinements.js" defer></script>
+<script src="./src/legacy/06-season-refinements.js?v=20260831-polar-no-meridian" defer></script>
 
 
 
@@ -497,7 +504,7 @@ if(location.protocol==="file:"){
 
 
 
-<script src="./src/legacy/09-precession-simulation.js" defer></script>
+<script src="./src/legacy/09-precession-simulation.js?v=20260831-precessionview" defer></script>
 
 
 <script src="./src/legacy/10-observer-scenes.js" defer></script>
@@ -507,7 +514,7 @@ if(location.protocol==="file:"){
 <script src="./src/legacy/11-precession-polaris.js" defer></script>
 
 
-<script src="./src/legacy/12-didactic-navigation.js" defer></script>
+<script src="./src/legacy/12-didactic-navigation.js?v=20260831-planethelp" defer></script>
 
 <!-- V10 checked: JS syntax, IDs, didactic back button, solar year, precession labels; N and Wega small precession labels -->
 
@@ -515,7 +522,7 @@ if(location.protocol==="file:"){
 <script src="./src/legacy/13-precession-labels.js" defer></script>
 
 
-<script src="./src/legacy/14-didactic-focus.js?v=2" defer></script>
-<script type="module" src="./src/main.js?v=20260827a"></script>
+<script src="./src/legacy/14-didactic-focus.js?v=20260831-precessionzoomreturn" defer></script>
+<script type="module" src="./src/main.js?v=20260831-atair"></script>
 </body>
 </html>

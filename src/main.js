@@ -3,14 +3,17 @@ import { activateDeferredStylesheets } from "./platform/deferredResources.js";
 import { bindOrientationCanvasInteractions } from "./ui/orientationCanvasInteractions.js";
 import { bindWorldMap } from "./ui/worldMap.js";
 import { installLightPollutionEstimator } from "./features/location/lightPollution.js?v=20260815-sqm1";
-import { installPrecessionCircleControl } from "./features/didactics/precessionCircle.js";
+import { installPrecessionCircleControl } from "./features/didactics/precessionCircle.js?v=20260831-keepcircle";
 import { installRuntimePerformanceProfile } from "./platform/runtimePerformance.js";
-import { installLabelCadence } from "./features/render/labelCadence.js?v=20260815d-timelabelsmooth3";
+import { installLabelCadence } from "./features/render/labelCadence.js?v=20260831-singlecanvas";
+import { createTextSpriteRenderer } from "./features/render/textSprites.js?v=20260831-atair";
 
 activateDeferredStylesheets();
 
 const start = () => {
-  installLabelCadence({ intervalMs: 200 });
+  window.__renderTextSprite = createTextSpriteRenderer();
+  document.fonts?.addEventListener('loadingdone',()=>window.__renderTextSprite.clear());
+  installLabelCadence();
   installPrecessionCircleControl();
   installRuntimePerformanceProfile();
   installLightPollutionEstimator({

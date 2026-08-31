@@ -39,7 +39,8 @@
   }
   function setMeridianForScene(id){
     // Der Meridian/Höhenkreis wird nur bei didaktischen Beobachtungspunkt-Sprüngen gezeigt.
-    if(typeof showAlt!=='undefined') showAlt = OBSERVATION_SCENES.has(id);
+    const polarScene = ['midnight-sun','polar-night','sim-polar-day','obs-northpole-summer','obs-northpole-winter'].includes(id);
+    if(typeof showAlt!=='undefined') showAlt = !polarScene && OBSERVATION_SCENES.has(id);
     if(typeof syncFocusButtons==='function') syncFocusButtons();
     const b=document.getElementById('balt'); if(b) b.classList.toggle('on', !!(typeof showAlt!=='undefined' && showAlt));
   }
