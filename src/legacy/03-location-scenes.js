@@ -128,6 +128,14 @@
     const oldSetNow=setNow;
     window.__setNowWrappedForCurrentGeo=true;
     setNow=function(){
+      /* "Jetzt" beendet auch eine laufende Finsternis-Navigation. Sonst
+         bleibt deren Zielort intern aktiv und kann beim naechsten Zeichnen
+         den aktuellen Standort wieder ueberschreiben. */
+      window.__eclZu=true;
+      window.__eclipseNavigation=null;
+      window.__eclipseNavigationOrigin=null;
+      if(typeof _pendingEclBox!=='undefined')_pendingEclBox=null;
+      if(typeof verbergeEclBox==='function')verbergeEclBox();
       window.didacticLocationOverride=false;
       if(window.currentGeo) {lat=window.currentGeo.lat; lng=window.currentGeo.lng;}
       const r=oldSetNow.apply(this,arguments);

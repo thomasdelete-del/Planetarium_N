@@ -130,6 +130,7 @@
     }catch(e){}
   }
   function drawEclipticAndMoonNodes(){
+    if(window.didacticSimulationMode==='precession') return;
     if(!(window.didacticSimulationMode==='moon' || window.showMoonPath===true)) return;
     if(window.didHideMoon===true && window.showMoonPath!==true) return;
     if(typeof currentJD!=='function' || typeof ecl2rd!=='function' || typeof altazXY!=='function') return;

@@ -34,6 +34,53 @@
   };
   var SCENE_OVERRIDE={"sim-moon-phases":{flags:{showZodiac:false,showLines:true,showRefCircles:true},after:function(){window.didHideEcl=false;window.showMoonPath=false;window.didHideMoon=false;},hideChips:["Sternnamen"]}};
   var PARTNER={"midnight-sun":"polar-night","polar-night":"midnight-sun","prec-today":"prec-vega","prec-vega":"prec-today","new-moon":"full-moon","full-moon":"new-moon","first-quarter":"last-quarter","last-quarter":"first-quarter","tropic-cancer":"tropic-capricorn","tropic-capricorn":"tropic-cancer","north-pole":"south-pole","south-pole":"north-pole","equator-day":"equator-night","equator-night":"equator-day"};
+  /* Nur die Schalter aus dem Kasten "Astronomische Simulationen" gehoeren
+     hier hinein. Ihr Zeitlauf wird nach allen asynchronen Szenen-Presets noch
+     einmal bestaetigt, damit kein spaeter Initialisierungsschritt die gerade
+     gestartete Simulation wieder anhält. */
+  var RUNNING_SIMULATIONS={
+    "sim-daily-rotation":1,
+    "sim-moon-phases":1,
+    "sim-planet-run":1,
+    "sim-precession":1,
+    "sim-polar-day":1,
+    "obs-northpole-winter":1,
+    "obs-northpole-summer":1,
+    "sim-seasons":1
+  };
+  function confirmSimulationRunning(id){
+    if(!RUNNING_SIMULATIONS[id])return;
+    var runToken=(window.__didacticSimulationRunToken||0)+1;
+    window.__didacticSimulationRunToken=runToken;
+    function startFinalSimulation(){
+      if(window.__didacticSimulationRunToken!==runToken||window.__lastJumpId!==id)return;
+      /* Mond-, Planeten- und Polsimulation sind laut Beschriftung 1 h/s. */
+      if(id==="sim-moon-phases"||id==="sim-planet-run"||id==="sim-polar-day"||id==="obs-northpole-winter"||id==="obs-northpole-summer"){
+        try{window.setGear&&window.setGear(3600,false)}catch(e){}
+      }else if(id==="sim-precession"||id==="sim-seasons"){
+        /* Diese beiden Szenen besitzen einen eigenen Jahres-Scheduler. */
+        try{window.setYearPlay&&window.setYearPlay(false)}catch(e){}
+        try{legacy.call("setPaused",false)}catch(e){}
+      }else{
+        /* Die Tagesdrehung behält die von jumpScene gesetzte Geschwindigkeit. */
+        try{legacy.call("setPaused",false)}catch(e){}
+      }
+      redraw();
+      /* Der atomare Sprung kann den bisherigen RAF-Zyklus beendet haben. Das
+         gilt besonders fuer Polar-Szenen, deren Endzustand spaeter greift. */
+      try{window.__requestPlanetariumFrame&&window.__requestPlanetariumFrame()}catch(e){}
+    }
+    /* Der Wrapper beginnt einen 900-ms-Atomsprung. Der eigentliche Start darf
+       erst in dessen Abschluss-Transaktion erfolgen; sonst kann ein späterer
+       Szenenschritt die Simulation wieder pausieren. Zwei kurze Nachprüfungen
+       fangen außerdem langsame Browser und mobile Layout-Pfade ab. */
+    try{
+      if(typeof window.__queueAtomicSkyCommit==="function")window.__queueAtomicSkyCommit(startFinalSimulation);
+      else setTimeout(startFinalSimulation,940);
+    }catch(e){setTimeout(startFinalSimulation,940)}
+    setTimeout(startFinalSimulation,1250);
+    setTimeout(startFinalSimulation,2100);
+  }
   var TOURS=[["new-moon","first-quarter","full-moon","last-quarter"],["prec-year-1","prec-today","prec-6000","prec-vega","prec-cycle"]];
   var lastScene=null,curSeason=null;
   window.__clearLastScene=function(){lastScene=null;};
@@ -142,7 +189,10 @@
       pzb.classList.toggle("on", typeof zoomedObj!=="undefined" && zoomedObj==="Präzessionskreis");
       pzb.onclick=function(){
         if(typeof zoomedObj!=="undefined" && zoomedObj==="Präzessionskreis"){
-          if(typeof resetView==="function") resetView();
+          // Nur den Zoomausschnitt zurücknehmen. resetView beendet über seine
+          // Wrapper die Präzession und verändert zusätzlich den Zeitlauf.
+          zoom=1;panX=0;panY=0;zoomedObj=null;
+          redraw();
           pzb.classList.remove("on");
         }else if(typeof window.zoomToPrecessionCircle==="function"){
           window.zoomToPrecessionCircle();
@@ -181,17 +231,29 @@
     var old=window.jumpScene;
     if(typeof old!=="function"||old.__v10Wrapped)return false;
     var w=function(id){
+      /* Alle Ebenen des Zielthemas werden in derselben Transaktion gesetzt.
+         So kann zwischen Schalterdruck und Endzustand kein Zwischenbild mit
+         den vorherigen oder nur teilweise gesetzten Parametern erscheinen. */
+      window.__didacticSceneJumpActive=true;
+      try{if(typeof window.__hideEclipseNavigation==="function")window.__hideEclipseNavigation()}catch(e){}
+      if(id&&id.indexOf("eclipse")>=0)window.__eclipseNavigationOrigin=null;
+      try{if(typeof window.__beginAtomicSkyJump==="function")window.__beginAtomicSkyJump(900)}catch(e){}
       if(id!=="current")window.__lastJumpId=id;
-      if(id==="current"){restorePreset();return old.apply(this,arguments);}
-      var r=old.apply(this,arguments);
-      var k=MAP[id];
-      if(k){lastScene=id;curSeason=seasonIdxFor(id);window.__didScene=id;setTimeout(function(){applyPreset(k)},380);}
-      else{
-        restorePreset();
-        if(id&&!CONST_IDS[id]){lastScene=id;}
+      try{
+        if(id==="current"){restorePreset();return old.apply(this,arguments);}
+        var r=old.apply(this,arguments);
+        var k=MAP[id];
+        if(k){lastScene=id;curSeason=seasonIdxFor(id);window.__didScene=id;applyPreset(k);}
+        else{
+          restorePreset();
+          if(id&&!CONST_IDS[id]){lastScene=id;}
+        }
+        confirmSimulationRunning(id);
+        try{initMainButtons()}catch(e){}
+        return r;
+      }finally{
+        window.__didacticSceneJumpActive=false;
       }
-      try{initMainButtons()}catch(e){}
-      return r;
     };
     w.__v10Wrapped=true;window.jumpScene=w;return true;
   }
