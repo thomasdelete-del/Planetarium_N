@@ -31,7 +31,7 @@ if(location.protocol==="file:"){
 <div id="scroller">
 <section id="page-jumps" class="snap">
   <div class="jump-shell">
-    <div class="jump-title"><span class="title-main">Planetarium</span><span class="title-build">Version 11.30 · Build 20260831b · freigegeben</span></div>
+    <div class="jump-title"><span class="title-main">Planetarium</span><span class="title-build">Version 11.31 · Build 20260831c · freigegeben</span></div>
     <div class="jump-sub">Didaktische Sprünge, Simulationen und Sternbild-Lernmodus. Jeder Schalter setzt Ort, Datum und Uhrzeit astronomisch plausibel und springt direkt zur Sternkarte.</div>
     <button class="jump-home" data-scene-id="current">🏠 Aktueller Himmel ▾</button>
 
@@ -88,7 +88,7 @@ if(location.protocol==="file:"){
       <p>Diese Schalter starten bewusst eine laufende Simulation.</p>
       <div class="jump-grid">
         <button class="jump-btn sim" data-scene-id="sim-daily-rotation"><b>Tagesdrehung des Himmels</b><span>Berlin, Zeit läuft schnell: Sterne drehen um den Pol.</span></button>
-        <button class="jump-btn sim" data-scene-id="sim-moon-phases"><b>Mondphasenlauf · Start Vollmond</b><span>Beginnt beim nächsten Vollmond und läuft mit 1 h/s.</span></button>
+        <button class="jump-btn sim" data-scene-id="sim-moon-phases"><b>Mondphasenlauf · Start Vollmond</b><span>Beginnt beim nächsten Vollmond und läuft mit 1 Tag/s.</span></button>
         <button class="jump-btn sim" data-scene-id="sim-planet-run"><b>Planetenlauf · 1 h/s</b><span>Himmelskörper laufen weiter; nur Namen von Sonne, Mond und Planeten.</span></button>
         <button class="jump-btn sim" data-scene-id="sim-precession"><b>Präzession</b><span>100 Jahre pro Sekunde; Polarstern, Errai, Alderamin, Wega sowie Thuban, Kochab und Deneb sind beschriftet.</span></button>
         <button class="jump-btn sim" data-scene-id="sim-polar-day"><b>Polartag am Polarkreis · Simulation</b><span>66,56° N · aktuelle Länge · Juni-Sonnenwende · 1 h/s Zeitlauf.</span></button>
@@ -145,7 +145,7 @@ if(location.protocol==="file:"){
   </div>
 </section>
 <section id="page-sky" class="snap">
-<header><h1>Planetarium</h1><p>Version 11.30 · Build 20260831b · freigegeben</p><div id="verinfo">Version 11.30 · Build 20260831b · freigegeben</div></header>
+<header><h1>Planetarium</h1><p>Version 11.31 · Build 20260831c · freigegeben</p><div id="verinfo">Version 11.31 · Build 20260831c · freigegeben</div></header>
 <div id="readout">–</div>
 <div id="year-bar">
   <button class="yb-btn" id="yb-back" title="1 Jahr zurück · halten: 10, dann 100 Jahre">◂</button>
@@ -172,7 +172,7 @@ if(location.protocol==="file:"){
 <section id="page-panel" class="snap">
 <div id="panel-bar" data-action="scroll-to-sky"><span class="lg-title">🎛 Planetarium</span><button id="panel-close" data-action="scroll-to-sky" title="zurück zum Himmel">✕</button></div>
 <div id="panel-body">
-<div class="panel-sub">Simulierter Sternenhimmel · Tippen · Zoom · Karte<br>Version 11.30 · Build 20260831b · freigegeben</div>
+<div class="panel-sub">Simulierter Sternenhimmel · Tippen · Zoom · Karte<br>Version 11.31 · Build 20260831c · freigegeben</div>
 <div class="ctrls">
   <button class="btn on" id="ba" data-action="toggle-animation">⏸ Pause</button>
   <button class="btn" data-action="set-now">Jetzt</button>
@@ -477,7 +477,7 @@ if(location.protocol==="file:"){
     <button id="map-close" data-action="close-map">✕ Schließen</button>
   </div>
 </div>
-<script src="./src/legacy/01-core.js?v=20260831a" defer></script>
+<script src="./src/legacy/01-core.js?v=20260831-gaia-mobile" defer></script>
 <script src="./src/legacy/00-scheduler.js" defer></script>
 
 
@@ -492,7 +492,7 @@ if(location.protocol==="file:"){
 
 
 
-<script src="./src/legacy/06-season-refinements.js?v=20260831-polar-no-meridian" defer></script>
+<script src="./src/legacy/06-season-refinements.js?v=20260831-moon-dome" defer></script>
 
 
 
@@ -522,7 +522,7 @@ if(location.protocol==="file:"){
 <script src="./src/legacy/13-precession-labels.js" defer></script>
 
 
-<script src="./src/legacy/14-didactic-focus.js?v=20260831-precessionzoomreturn" defer></script>
+<script src="./src/legacy/14-didactic-focus.js?v=20260831-moon-day" defer></script>
 <script type="module" src="./src/main.js?v=20260831-zoomsharp"></script>
 </body>
 </html>

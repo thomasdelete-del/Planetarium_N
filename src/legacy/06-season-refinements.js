@@ -70,9 +70,9 @@
       if(SEASON_TARGETS[id]) return jumpSeasonExact(id);
       if(id==='sim-moon-phases'){
         // Mondphasenlauf beginnt didaktisch beim Vollmond.
-        if(typeof jumpMoonPhase==='function') jumpMoonPhase(180,'Mondphasenlauf · Vollmond');
-        if(typeof sceneRun==='function') sceneRun(3600);
-        setTimeout(()=>{ setMeridianForScene(id); if(typeof showToast==='function') showToast('Mondphasenlauf startet beim Vollmond · 1 h/s'); },320);
+        if(typeof jumpMoonPhase==='function') jumpMoonPhase(180,'Mondphasenlauf · Vollmond','dome');
+        if(typeof sceneRun==='function') sceneRun(86400);
+        setTimeout(()=>{ setMeridianForScene(id); if(typeof showToast==='function') showToast('Mondphasenlauf startet beim Vollmond · 1 Tag/s'); },320);
         return;
       }
       const r=oldJumpScene.apply(this,arguments);

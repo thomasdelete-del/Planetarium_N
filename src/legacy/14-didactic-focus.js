@@ -54,8 +54,10 @@
     window.__didacticSimulationRunToken=runToken;
     function startFinalSimulation(){
       if(window.__didacticSimulationRunToken!==runToken||window.__lastJumpId!==id)return;
-      /* Mond-, Planeten- und Polsimulation sind laut Beschriftung 1 h/s. */
-      if(id==="sim-moon-phases"||id==="sim-planet-run"||id==="sim-polar-day"||id==="obs-northpole-winter"||id==="obs-northpole-summer"){
+      /* Mondphasen: 1 Tag/s. Planeten- und Polsimulation: 1 h/s. */
+      if(id==="sim-moon-phases"){
+        try{window.setGear&&window.setGear(86400,false)}catch(e){}
+      }else if(id==="sim-planet-run"||id==="sim-polar-day"||id==="obs-northpole-winter"||id==="obs-northpole-summer"){
         try{window.setGear&&window.setGear(3600,false)}catch(e){}
       }else if(id==="sim-precession"||id==="sim-seasons"){
         /* Diese beiden Szenen besitzen einen eigenen Jahres-Scheduler. */
