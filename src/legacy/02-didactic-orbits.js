@@ -69,7 +69,7 @@
       setSixHourSpeed();
       if(typeof setPaused==='function') setPaused(false); else paused=false;
       if(typeof showToast==='function') showToast('Planetenlauf · 1 h/s · alle Linien ausgeblendet');
-      if(typeof draw==='function'&&W) draw();
+      if(typeof window.scheduleDidacticSkyDraw==='function')window.scheduleDidacticSkyDraw('didactic-orbit');
     },280);
   }
   function startMoonOrbitRun(){
@@ -83,7 +83,7 @@
       setSixHourSpeed();
       if(typeof setPaused==='function') setPaused(false); else paused=false;
       if(typeof showToast==='function') showToast('Mondlauf · 1 h/s · Ekliptik, mittlere Mondbahn und Mondknoten');
-      if(typeof draw==='function'&&W) draw();
+      if(typeof window.scheduleDidacticSkyDraw==='function')window.scheduleDidacticSkyDraw('didactic-orbit');
     },340);
   }
   function screenPointFromRaDec(ra,dec,R){
@@ -131,6 +131,10 @@
   }
   function drawEclipticAndMoonNodes(){
     if(window.didacticSimulationMode==='precession') return;
+    /* Im Mondphasen-Komposit zeichnet der gemeinsame Himmelsweg Ekliptik,
+       Mondbahn und Knoten. Die zusätzliche Didaktik-Ebene würde dieselben
+       Linien ein zweites Mal zeichnen und den Bild-Schalter umgehen. */
+    if(window.__moonPhaseTracking===true) return;
     if(!(window.didacticSimulationMode==='moon' || window.showMoonPath===true)) return;
     if(window.didHideMoon===true && window.showMoonPath!==true) return;
     if(typeof currentJD!=='function' || typeof ecl2rd!=='function' || typeof altazXY!=='function') return;

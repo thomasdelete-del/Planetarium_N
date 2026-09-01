@@ -65,6 +65,10 @@
   }
   function overlayRealMoon(){
     if(window.didacticSimulationMode!=='moon')return;
+    /* Im nachgefuehrten Beobachtermodus zeichnet der Hauptpfad den Mond bereits
+       perspektivisch korrekt. Das alte Dome-Overlay wuerde ihn ein zweites Mal
+       mit einer anderen Projektion ueberlagern und scheinbar springen lassen. */
+    if(window.__moonPhaseTracking)return;
     if(typeof g==='undefined'||typeof currentJD!=='function'||typeof altazXY!=='function'||typeof ecl2rd!=='function'||typeof moonEcl!=='function')return;
     const jd=currentJD();
     const HR=(typeof C==='number'?C:Math.min(cv.width,cv.height)/2)*((document.body.classList.contains('fullscreen'))?.965:.94);

@@ -6,9 +6,12 @@
   var legacy=window.__planetariumLegacy;
   if(!legacy)throw new Error("Planetarium-Legacy-API fehlt");
   function getFlag(n){if(n==="__SP")return!!window.showSunPath;if(n==="__AN")return!!window.showAnalemma;if(n==="__EC")return window.didHideEcl!==true;if(n==="__MK")return !!window.__zodiacOn;return legacy.get(n)}
-  function setFlag(n,v){if(n==="__SP"){window.showSunPath=!!v;return}if(n==="__AN"){window.showAnalemma=!!v;return}if(n==="__EC"){window.didHideEcl=!v;return}if(n==="__MK"){window.__zodiacOn=!!v;legacy.set("showZodiac",v);window.didHideEcl=!v;window.didHideConstNames=!v;return}legacy.set(n,v)}
+  function setFlag(n,v){if(n==="__SP"){window.showSunPath=!!v;return}if(n==="__AN"){if(typeof window.__resetSolarYearTrail==="function")window.__resetSolarYearTrail();window.showAnalemma=!!v;return}if(n==="__EC"){window.didHideEcl=!v;return}if(n==="__MK"){window.__zodiacOn=!!v;legacy.set("showZodiac",v);window.didHideEcl=!v;window.didHideConstNames=!v;return}legacy.set(n,v)}
   function setNum(n,v){legacy.set(n,+v)}
-  function redraw(){try{if(typeof window.draw==="function")window.draw()}catch(e){}}
+  function redraw(){try{
+    if(typeof window.scheduleDidacticSkyDraw==="function")window.scheduleDidacticSkyDraw("didactic");
+    else if(typeof window.draw==="function")window.draw();
+  }catch(e){}}
   var FLAGS=["showLines","showRefCircles","showNames","showZodiac","showTwilight","showISS","showMeteors","showJMoons","showRA","showAlt"];
   var BTN={showLines:"blines",showRefCircles:"brefc",showNames:"bn",showZodiac:"bzod",showTwilight:"btwi",showISS:"biss",showMeteors:"bmeteor",showRA:"bra",showAlt:"balt"};
   function syncButtons(){for(var f in BTN){var el=document.getElementById(BTN[f]);if(el)el.classList.toggle("on",!!getFlag(f))}}
@@ -27,12 +30,12 @@
     seasons:[["Sonnenbahn","__SP"],["Analemma","__AN"],["Dämmerung","showTwilight"],["Sternnamen","showNames"]],
     polar:[["Sonnenbahn","__SP"],["Dämmerung","showTwilight"],["Sternnamen","showNames"]],
     eclipse:[["Sternnamen","showNames"],["Tierkreis","showZodiac"]],
-    moon:[["Sternnamen","showNames"],["Tierkreis","__MK"],["Dämmerung","showTwilight"]],
+    moon:[["Sternnamen","showNames"],["Ekliptik & Mondknoten","__EC"]],
     prec:[["Tierkreis","__MK"]],
     planets:[["Sternnamen","showNames"],["Sternbild-Linien","showLines"]],
     rotation:[["Sonnenbahn","__SP"],["RA-Gitter","showRA"],["Sternnamen","showNames"],["Dämmerung","showTwilight"]]
   };
-  var SCENE_OVERRIDE={"sim-moon-phases":{flags:{showZodiac:false,showLines:true,showRefCircles:true},after:function(){window.didHideEcl=false;window.showMoonPath=false;window.didHideMoon=false;},hideChips:["Sternnamen"]}};
+  var SCENE_OVERRIDE={"sim-moon-phases":{flags:{showZodiac:false,showLines:true,showRefCircles:true,showTwilight:false},after:function(){window.didHideEcl=true;window.showMoonPath=false;window.didHideMoon=false;},hideChips:["Sternnamen"]}};
   var PARTNER={"midnight-sun":"polar-night","polar-night":"midnight-sun","prec-today":"prec-vega","prec-vega":"prec-today","new-moon":"full-moon","full-moon":"new-moon","first-quarter":"last-quarter","last-quarter":"first-quarter","tropic-cancer":"tropic-capricorn","tropic-capricorn":"tropic-cancer","north-pole":"south-pole","south-pole":"north-pole","equator-day":"equator-night","equator-night":"equator-day"};
   /* Nur die Schalter aus dem Kasten "Astronomische Simulationen" gehoeren
      hier hinein. Ihr Zeitlauf wird nach allen asynchronen Szenen-Presets noch
@@ -56,7 +59,7 @@
       if(window.__didacticSimulationRunToken!==runToken||window.__lastJumpId!==id)return;
       /* Mondphasen: 1 Tag/s. Planeten- und Polsimulation: 1 h/s. */
       if(id==="sim-moon-phases"){
-        try{window.setGear&&window.setGear(86400,false)}catch(e){}
+        try{window.startMoonPhaseDayRun&&window.startMoonPhaseDayRun()}catch(e){}
       }else if(id==="sim-planet-run"||id==="sim-polar-day"||id==="obs-northpole-winter"||id==="obs-northpole-summer"){
         try{window.setGear&&window.setGear(3600,false)}catch(e){}
       }else if(id==="sim-precession"||id==="sim-seasons"){

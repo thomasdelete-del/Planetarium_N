@@ -10,6 +10,7 @@
   let solarDayIndex = 0;
   let solarLayerState = null;
   let solarTrail = [];
+  window.__resetSolarYearTrail=function(){solarTrail=[];};
   function saveSolarLayers(){
     if(solarLayerState) return;
     solarLayerState = {

@@ -247,7 +247,7 @@
       if(page&&sc){sc.scrollTop=page.offsetTop;}
       else if(page){page.scrollIntoView({behavior:'smooth',block:'start'});}
     }
-    if(typeof draw==='function' && typeof W!=='undefined' && W) draw();
+    if(typeof window.scheduleDidacticSkyDraw==='function')window.scheduleDidacticSkyDraw('didactic-navigation');
   };
 
   if(typeof jumpScene==='function' && !window.__v9DidacticBackJumpWrap){

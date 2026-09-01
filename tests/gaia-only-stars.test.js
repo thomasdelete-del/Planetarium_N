@@ -66,7 +66,7 @@ test("vertical panning keeps Gaia density projected and finishes with a quality 
 
 test("mode changes schedule a complete Gaia quality frame", () => {
   assert.match(core, /function __requestSettledSkyFrame\(\)/);
-  assert.match(core, /__settledSkyFrameTimer=setTimeout\(\(\)=>\{interacting=0;if\(W\)draw\(\)\},90\)/);
+  assert.match(core, /__settledSkyFrameTimer=setTimeout\(\(\)=>\{interacting=0;__scheduleSkyDraw\("settled",true\)\},90\)/);
   assert.match(core, /function toggleViewMode\(\)\{[\s\S]*?__requestSettledSkyFrame\(\)/);
 });
 

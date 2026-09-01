@@ -7,6 +7,7 @@ import { installPrecessionCircleControl } from "./features/didactics/precessionC
 import { installRuntimePerformanceProfile } from "./platform/runtimePerformance.js";
 import { installLabelCadence } from "./features/render/labelCadence.js?v=20260831-singlecanvas";
 import { createTextSpriteRenderer } from "./features/render/textSprites.js?v=20260831-zoomsharp";
+import { installMoonPhaseTracking } from "./features/render/moonPhaseTracking.js?v=20260902-meridian-trail";
 
 activateDeferredStylesheets();
 
@@ -14,6 +15,7 @@ const start = () => {
   window.__renderTextSprite = createTextSpriteRenderer();
   document.fonts?.addEventListener('loadingdone',()=>window.__renderTextSprite.clear());
   installLabelCadence();
+  installMoonPhaseTracking();
   installPrecessionCircleControl();
   installRuntimePerformanceProfile();
   installLightPollutionEstimator({
