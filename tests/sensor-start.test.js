@@ -29,3 +29,12 @@ test('usable sensor: orientation first, no intermediate view',()=>{
 test('sensor without usable readings: observer on timeout',()=>{
   const s=setup({});s.run(500);s.run(0);assert.equal(s.ctx.orientMode,false);assert.deepEqual(s.log,['draw','reveal']);
 });
+test('permission-based mobile sensor starts without a custom question',()=>{
+  let asked=0;
+  const s=setup({requestPermission(){asked++;return Promise.resolve('granted')}});
+  s.run(0);
+  assert.equal(asked,0);
+  assert.equal(s.ctx.viewMode,'real');
+  assert.equal(s.ctx.orientMode,false);
+  assert.deepEqual(s.log,['draw','reveal']);
+});

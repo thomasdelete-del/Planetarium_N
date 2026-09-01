@@ -90,7 +90,7 @@ test("orientation mode uses continuous site-aware stellar photometry above and b
   assert.match(core, /edge\*edge\*\(3-2\*edge\)/);
   assert.match(core, /orientStyle=orientMode\?orientStarStyle\(mag,PX\/zoom\):null/);
   assert.match(core, /orientStyle=orientMode\?orientStarStyle\(mag,rbg\):null/);
-  assert.match(core, /sinA>0\?extBySinAlt\(sinA\):\.55/);
+  assert.match(core, /sinA>0\?extBySinAlt\(sinA\):1/);
 });
 
 test("orientation rendering follows visible pixel motion instead of every sensor event", () => {
@@ -142,10 +142,12 @@ test("orientation mode always enables names and constellation lines", () => {
 });
 
 test("orientation mode keeps the complete sky visible below the horizon", () => {
-  assert.match(core, /if\(orientMode\)\{gg\.addColorStop\(0,"rgba\(11,16,24,\.40\)"\)/);
-  assert.match(core, /gg\.addColorStop\(1,"rgba\(4,6,10,\.56\)"\)/);
+  assert.match(core, /id="orientation-below-layer"/);
+  assert.match(core, /_orientBelowDraw\(pts,HH,g\.getTransform\(\)\)/);
+  assert.match(core, /gg\.addColorStop\(1,"rgba\(1,3,8,\.78\)"\)/);
   assert.match(core, /function _altOK\(a\)\{return a>=0\|\|\(orientMode&&a>-900\)\}/);
-  assert.match(core, /sinAlt<=0\.0\?\(u_allowBelow>\.5\?\.55:0\.0\)/);
+  assert.match(core, /sinAlt<=0\.0&&u_allowBelow>\.5&&!densityLayer&&mag>5\.2/);
+  assert.match(core, /sinAlt<=0\.0\?\(u_allowBelow>\.5\?\.75:0\.0\)/);
 });
 
 test("local declination reference circles use stationary hour-angle samples", () => {

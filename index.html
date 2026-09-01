@@ -8,7 +8,6 @@
 html.sensor-starting body>*{visibility:hidden!important}
 html.sensor-starting #sensor-start,html.sensor-starting #sensor-start *{visibility:visible!important}
 #sensor-start{position:fixed;inset:0;z-index:99999;background:#050810;color:#e5eaf2;display:grid;place-content:center;text-align:center;padding:24px;font:16px system-ui}
-#sensor-start-button{padding:12px 20px;font:inherit}
 </style>
 <script>
 window.addEventListener("error",event=>{document.documentElement.dataset.bootError=event.message||"Skriptfehler"});
@@ -27,7 +26,7 @@ if(location.protocol==="file:"){
 <link rel="stylesheet" href="./src/styles/legacy.css">
 </head>
 <body>
-<div id="sensor-start" role="status"><p id="sensor-start-status">Lagesensor wird geprüft …</p><button id="sensor-start-button" type="button" hidden>Sensor prüfen und starten</button></div>
+<div id="sensor-start" role="status"><p id="sensor-start-status">Ansicht wird gestartet …</p></div>
 <div id="scroller">
 <section id="page-jumps" class="snap">
   <div class="jump-shell">
@@ -477,7 +476,7 @@ if(location.protocol==="file:"){
     <button id="map-close" data-action="close-map">✕ Schließen</button>
   </div>
 </div>
-<script src="./src/legacy/01-core.js?v=20260831-gaia-mobile" defer></script>
+<script src="./src/legacy/01-core.js?v=20260901-below-stars" defer></script>
 <script src="./src/legacy/00-scheduler.js" defer></script>
 
 
