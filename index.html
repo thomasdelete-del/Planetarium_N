@@ -1,14 +1,9 @@
 <!DOCTYPE html>
-<html lang="de" class="sensor-starting">
+<html lang="de">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>Planetarium · Version 11</title>
-<style>
-html.sensor-starting body>*{visibility:hidden!important}
-html.sensor-starting #sensor-start,html.sensor-starting #sensor-start *{visibility:visible!important}
-#sensor-start{position:fixed;inset:0;z-index:99999;background:#050810;color:#e5eaf2;display:grid;place-content:center;text-align:center;padding:24px;font:16px system-ui}
-</style>
 <script>
 window.addEventListener("error",event=>{document.documentElement.dataset.bootError=event.message||"Skriptfehler"});
 window.addEventListener("unhandledrejection",event=>{document.documentElement.dataset.bootError=String(event.reason&&event.reason.message||event.reason||"Promise-Fehler")});
@@ -26,7 +21,6 @@ if(location.protocol==="file:"){
 <link rel="stylesheet" href="./src/styles/legacy.css">
 </head>
 <body>
-<div id="sensor-start" role="status"><p id="sensor-start-status">Ansicht wird gestartet …</p></div>
 <div id="scroller">
 <section id="page-jumps" class="snap">
   <div class="jump-shell">
@@ -165,7 +159,7 @@ if(location.protocol==="file:"){
   <button data-action="manual-orientation" data-azimuth="12" data-altitude="0" title="rechts">▶</button>
 </div>
 <div id="info-tr" class="corner-info"></div>
-<div id="info-br" class="corner-info" data-action="toggle-telescope" title="Teleskopansicht · Modell: 70 mm Öffnung, 7 mm Augenpupille"></div>
+<div id="info-br" class="corner-info" data-action="toggle-telescope" title="Relative Bildschirmvergrößerung; in der Beobachteransicht zusätzlich das aktuelle Bildfeld"></div>
 <div id="info-bl" class="corner-info"></div>
 </section>
 <section id="page-panel" class="snap">
@@ -476,7 +470,7 @@ if(location.protocol==="file:"){
     <button id="map-close" data-action="close-map">✕ Schließen</button>
   </div>
 </div>
-<script src="./src/legacy/01-core.js?v=20260902-keep-moon-running" defer></script>
+<script src="./src/legacy/01-core.js?v=20260902-mobile-orient" defer></script>
 <script src="./src/legacy/00-scheduler.js" defer></script>
 
 

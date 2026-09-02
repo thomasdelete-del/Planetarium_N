@@ -67,12 +67,13 @@ test('bright limb orientation is refreshed within a day',()=>{
   assert.match(read('01-core.js'),/Math\.abs\(jd0-_moonLimbCache\.jd\)>=1\/1440/);
 });
 
-test('lunar craters do not rotate with the bright limb',()=>{
+test('lunar craters follow the projected lunar axis instead of the bright limb',()=>{
   const core=read('01-core.js');
-  assert.match(core,/function drawMoonSurfaceFixed\(ctx,image,mx,my,r,brightLimbAng\)/);
-  assert.match(core,/ctx\.rotate\(-brightLimbAng\)/);
-  assert.match(core,/drawMoonSurfaceFixed\(g,moonImg,mx,my,mRdraw,brightLimbAng\)/);
-  assert.match(core,/drawMoonSurfaceFixed\(g,ms\.cnv,mx,my,mRdraw,brightLimbAng\)/);
+  assert.match(core,/function moonAxisScreenAngle\(mtopo,HR,mP,jd0\)/);
+  assert.match(core,/function drawMoonSurfaceFixed\(ctx,image,mx,my,r,brightLimbAng,axisAng\)/);
+  assert.match(core,/ctx\.rotate\(-brightLimbAng\+\(axisAng\|\|0\)\)/);
+  assert.match(core,/drawMoonSurfaceFixed\(g,moonImg,mx,my,mRdraw,brightLimbAng,moonAxisAng\)/);
+  assert.match(core,/drawMoonSurfaceFixed\(g,ms\.cnv,mx,my,mRdraw,brightLimbAng,moonAxisAng\)/);
   assert.doesNotMatch(core,/g\.drawImage\(moonImg,mx-mRdraw/);
 });
 
