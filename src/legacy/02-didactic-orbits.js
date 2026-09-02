@@ -95,9 +95,6 @@
     g.font=(12*PX*(window.userLabelScale||1)*Math.max(.85,Math.min(1,Math.min(window.innerWidth,window.innerHeight)/430)))+'px Inter, system-ui, sans-serif';
     g.textAlign=align||'center';
     g.textBaseline='middle';
-    g.lineWidth=4*PX;
-    g.strokeStyle='rgba(0,0,0,.75)';
-    g.strokeText(txt,x,y);
     g.fillStyle=color||'rgba(245,247,255,.92)';
     g.fillText(txt,x,y);
     g.restore();

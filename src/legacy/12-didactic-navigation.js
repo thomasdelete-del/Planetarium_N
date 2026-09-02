@@ -320,8 +320,8 @@
       g.save();
       g.font=(12*px*(window.userLabelScale||1)*Math.max(.85,Math.min(1,Math.min(window.innerWidth,window.innerHeight)/430)))+'px Inter, system-ui, sans-serif';
       g.textAlign='center';g.textBaseline='middle';
-      g.lineWidth=4*px;g.strokeStyle='rgba(0,0,0,.82)';g.fillStyle='rgba(235,246,255,.98)';
-      g.strokeText(t.label,x,y);g.fillText(t.label,x,y);
+      g.fillStyle='rgba(235,246,255,.98)';
+      g.fillText(t.label,x,y);
       g.restore();
     }catch(e){console.warn('Präzessionslabel konnte nicht gezeichnet werden',e);}
   }

@@ -17,12 +17,12 @@
   function syncButtons(){for(var f in BTN){var el=document.getElementById(BTN[f]);if(el)el.classList.toggle("on",!!getFlag(f))}}
   var P={
     seasons:{showZodiac:false,showNames:true,showISS:false,showMeteors:false,showJMoons:false,showLines:true,showRefCircles:true,showTwilight:false,showRA:false,showAlt:false},
-    polar:{showZodiac:false,showNames:false,showISS:false,showJMoons:false,showLines:true,showRefCircles:true,showTwilight:true,showRA:false,showAlt:false},
+    polar:{showZodiac:false,showNames:false,showISS:false,showMeteors:false,showJMoons:false,showLines:true,showRefCircles:true,showTwilight:true,showRA:false,showAlt:false},
     eclipse:{showZodiac:false,showNames:false,showISS:false,showMeteors:false,showJMoons:false,showLines:true,showRefCircles:true,showTwilight:false,showRA:false,showAlt:false},
-    moon:{showZodiac:false,showNames:false,showISS:false,showJMoons:false,showLines:true,showRefCircles:true,showTwilight:false,showRA:false,showAlt:false},
-    prec:{showZodiac:true,showNames:true,showISS:false,showJMoons:false,showLines:true,showRefCircles:true,showTwilight:false,showRA:false,showAlt:false},
-    planets:{showZodiac:false,showNames:false,showISS:false,showJMoons:false,showLines:false,showRefCircles:false,showTwilight:false,showRA:false,showAlt:false},
-    rotation:{showZodiac:false,showNames:false,showISS:false,showJMoons:false,showLines:true,showRefCircles:true,showTwilight:false,showRA:false,showAlt:false}
+    moon:{showZodiac:false,showNames:false,showISS:false,showMeteors:false,showJMoons:false,showLines:true,showRefCircles:true,showTwilight:false,showRA:false,showAlt:false},
+    prec:{showZodiac:true,showNames:true,showISS:false,showMeteors:false,showJMoons:false,showLines:true,showRefCircles:true,showTwilight:false,showRA:false,showAlt:false},
+    planets:{showZodiac:false,showNames:false,showISS:false,showMeteors:false,showJMoons:false,showLines:false,showRefCircles:false,showTwilight:false,showRA:false,showAlt:false},
+    rotation:{showZodiac:false,showNames:false,showISS:false,showMeteors:false,showJMoons:false,showLines:true,showRefCircles:true,showTwilight:false,showRA:false,showAlt:false}
   };
   var MAP={"obs-equator-spring":"seasons","obs-equator-summer":"seasons","obs-tropic-spring":"seasons","obs-tropic-summer":"seasons","obs-arctic-spring":"seasons","obs-arctic-summer":"seasons","obs-northpole-spring":"seasons","obs-northpole-summer":"seasons","obs-southpole-northsummer":"seasons","obs-northpole-winter":"seasons","spring-equinox":"seasons","summer-solstice":"seasons","autumn-equinox":"seasons","winter-solstice":"seasons","equator-day":"seasons","north-pole":"seasons","south-pole":"seasons","tropic-cancer":"seasons","tropic-capricorn":"seasons","midnight-sun":"polar","polar-night":"polar","sim-polar-day":"polar","solar-eclipse":"eclipse","lunar-eclipse":"eclipse","solar-eclipse-prev":"eclipse","lunar-eclipse-prev":"eclipse","eclipse-2026-spain":"eclipse","sim-eclipse-search":"eclipse","new-moon":"moon","first-quarter":"moon","full-moon":"moon","last-quarter":"moon","sim-moon-phases":"moon","sim-precession":"prec","prec-year-1":"prec","prec-today":"prec","prec-6000":"prec","prec-vega":"prec","prec-cycle":"prec","sim-planet-run":"planets","sim-daily-rotation":"rotation","equator-night":"rotation"};
   var CONST_IDS={orion:1,"ursa-major":1,cassiopeia:1,scorpius:1,"milky-way-center":1,widder:1,stier:1,zwillinge:1,loewe:1,jungfrau:1,schuetze:1};
@@ -86,6 +86,18 @@
     setTimeout(startFinalSimulation,1250);
     setTimeout(startFinalSimulation,2100);
   }
+  function stopMoonPhaseForOtherScene(id){
+    if(id==="sim-moon-phases")return;
+    /* Einige spaetere Szenen-Wrapper behandeln ihr Ziel vollstaendig selbst
+       und erreichen den alten jumpScene-Kern nicht. Deshalb wird der separate
+       Mond-Tagesscheduler hier am aeussersten, gemeinsamen Schalterweg beendet. */
+    window.__didacticSimulationRunToken=(window.__didacticSimulationRunToken||0)+1;
+    window.__moonPhaseTracking=false;
+    window.__moonPhaseNeedsCenter=false;
+    if(window.didacticSimulationMode==="moon")window.didacticSimulationMode=null;
+    try{window.stopMoonPhaseDayRun&&window.stopMoonPhaseDayRun()}catch(e){}
+    try{window.__resetMoonMeridianTrail&&window.__resetMoonMeridianTrail()}catch(e){}
+  }
   var TOURS=[["new-moon","first-quarter","full-moon","last-quarter"],["prec-year-1","prec-today","prec-6000","prec-vega","prec-cycle"]];
   var lastScene=null,curSeason=null;
   window.__clearLastScene=function(){lastScene=null;};
@@ -123,9 +135,11 @@
   window.didacticFocus=focus;
   var snap=null,activeKey=null;
   function applyPreset(key){
-    if(!window.didacticFocus||!P[key])return;
+    if(!P[key])return;
     if(!snap){snap={};for(var i=0;i<FLAGS.length;i++)snap[FLAGS[i]]=getFlag(FLAGS[i]);}
-    var p=P[key];for(var f in p)setFlag(f,p[f]);
+    /* Jeder Sprung ist eine vollständige Zustandszuweisung. Kein Schalterwert
+       der vorherigen Szene darf durch eine ausgelassene Eigenschaft fortleben. */
+    var p=P[key];for(var fi=0;fi<FLAGS.length;fi++){var f=FLAGS[fi];setFlag(f,p[f]===true);}
     window.showSunPath=(key==="seasons"||key==="polar"||key==="rotation");window.showAnalemma=false;
     window.didHideEcl=(key==="polar"||key==="prec"||key==="rotation");
     window.didHidePrec=(key!=="prec");
@@ -240,6 +254,7 @@
          So kann zwischen Schalterdruck und Endzustand kein Zwischenbild mit
          den vorherigen oder nur teilweise gesetzten Parametern erscheinen. */
       window.__didacticSceneJumpActive=true;
+      stopMoonPhaseForOtherScene(id);
       try{if(typeof window.__hideEclipseNavigation==="function")window.__hideEclipseNavigation()}catch(e){}
       if(id&&id.indexOf("eclipse")>=0)window.__eclipseNavigationOrigin=null;
       try{if(typeof window.__beginAtomicSkyJump==="function")window.__beginAtomicSkyJump(900)}catch(e){}

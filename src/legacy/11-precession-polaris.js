@@ -37,10 +37,7 @@
       g.font = (12*PX*(window.userLabelScale||1)*Math.max(.85,Math.min(1,Math.min(window.innerWidth,window.innerHeight)/430))) + 'px Inter, system-ui, sans-serif';
       g.textAlign = 'center';
       g.textBaseline = 'middle';
-      g.lineWidth = 4*PX;
-      g.strokeStyle = 'rgba(0,0,0,.82)';
       g.fillStyle = 'rgba(235,246,255,.98)';
-      g.strokeText('Polarstern', x, y);
       g.fillText('Polarstern', x, y);
       g.restore();
     }catch(e){ console.warn('Polarstern-Label konnte nicht gezeichnet werden', e); }

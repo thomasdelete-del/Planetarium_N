@@ -54,7 +54,9 @@ window.__V9_UNIFY_LABELS=true;window.__V9_LABEL_SIZE=13;
         const pf=g.font, pc=g.fillStyle, ps=g.shadowColor, pb=g.shadowBlur, pox=g.shadowOffsetX, poy=g.shadowOffsetY;
         const sz=zodiac?size*.82:size;
         g.font=`600 ${sz}px Inter,system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif`;
-        g.shadowColor="rgba(2,6,18,.94)";g.shadowBlur=Math.max(3,(window.devicePixelRatio||1)*4);g.shadowOffsetX=0;g.shadowOffsetY=0;
+        /* Objekt- und Himmelsbeschriftungen bleiben bewusst ohne Leucht- oder
+           Schlagschatten. So bleiben die Glyphen auch bei Zoom scharf. */
+        g.shadowColor="transparent";g.shadowBlur=0;g.shadowOffsetX=0;g.shadowOffsetY=0;
         if(zodiac)g.fillStyle="rgba(245,198,92,.88)";
         else if(/^☄ /.test(text))g.fillStyle="rgba(255,185,95,.88)";
         else if(text==="Präzessionskreis")g.fillStyle="rgba(125,214,255,.86)";
@@ -2382,6 +2384,7 @@ function stopMoonPhaseDayRun(){
   if(__moonPhaseDayCancel){__moonPhaseDayCancel();__moonPhaseDayCancel=null}
   if(window.__planetariumScheduler)window.__planetariumScheduler.cancel("moon-phase-day");
 }
+window.stopMoonPhaseDayRun=stopMoonPhaseDayRun;
 function clearMoonCompositeOnObserverExit(){
   resetStoredSkyImagesOnViewToggle();
 }
@@ -3487,6 +3490,15 @@ function restorePlanetReturnScroll(){
 }
 function restorePlanetViewFlags(){if(window.__planetViewSaved){showLines=window.__planetViewSaved.lines;showRefCircles=window.__planetViewSaved.refc;showZodiac=window.__planetViewSaved.zodiac;window.didHideEcl=window.__planetViewSaved.ecl;window.__planetViewSaved=null;try{if(typeof syncFocusButtons==="function")syncFocusButtons()}catch(e){}}}
 function focusPlanetView(name){
+  /* Der Mondphasenlauf besitzt einen eigenen Tagesschritt-Scheduler. Ein
+     Planetensprung muss ihn auch dann beenden, wenn dieser Zeichenweg direkt
+     (also ohne jumpScene) aufgerufen wurde. Der Token macht zudem bereits
+     vorgemerkte, verzoegerte Neustarts der Mond-Simulation unwirksam. */
+  window.__moonPhaseTracking=false;
+  stopMoonPhaseDayRun();
+  if(window.didacticSimulationMode==="moon")window.didacticSimulationMode=null;
+  window.__didacticSimulationRunToken=(window.__didacticSimulationRunToken||0)+1;
+  if(typeof window.__resetMoonMeridianTrail==="function")window.__resetMoonMeridianTrail();
   beginAtomicSkyJump(440);
   /* Auf Wunsch: nur der erste Sprung in dieser Didaktik-Sitzung erzwingt die Kuppelansicht
      (bzw. beendet einen laufenden Lagemodus). Waehlt der Nutzer danach ausdruecklich den

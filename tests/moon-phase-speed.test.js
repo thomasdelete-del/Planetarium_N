@@ -132,3 +132,37 @@ test('moon phases advance in quiet whole-day steps without camera recentering',(
   const tracking=readFileSync(new URL('../src/features/render/moonPhaseTracking.js',import.meta.url),'utf8');
   assert.match(tracking,/__moonPhaseTracking && globalObject\.__moonPhaseNeedsCenter/);
 });
+
+test('every direct planet focus stops moon phase tracking and delayed restarts',()=>{
+  const core=read('01-core.js');
+  const start=core.indexOf('function focusPlanetView(name){');
+  const block=core.slice(start,core.indexOf('beginAtomicSkyJump(440);',start));
+  assert.match(block,/window\.__moonPhaseTracking=false/);
+  assert.match(block,/stopMoonPhaseDayRun\(\)/);
+  assert.match(block,/didacticSimulationMode==="moon"/);
+  assert.match(block,/__didacticSimulationRunToken=.*\+1/);
+  assert.match(block,/__resetMoonMeridianTrail/);
+});
+
+test('every other didactic scene switch stops the moon phase scheduler',()=>{
+  const core=read('01-core.js');
+  assert.match(core,/window\.stopMoonPhaseDayRun=stopMoonPhaseDayRun/);
+  const focus=read('14-didactic-focus.js');
+  const start=focus.indexOf('function stopMoonPhaseForOtherScene(id){');
+  const block=focus.slice(start,focus.indexOf('var TOURS=',start));
+  assert.match(block,/if\(id==="sim-moon-phases"\)return/);
+  assert.match(block,/__didacticSimulationRunToken=.*\+1/);
+  assert.match(block,/window\.__moonPhaseTracking=false/);
+  assert.match(block,/window\.stopMoonPhaseDayRun&&window\.stopMoonPhaseDayRun\(\)/);
+  const wrapper=focus.slice(focus.indexOf('var w=function(id){'),focus.indexOf('w.__v10Wrapped'));
+  assert.match(wrapper,/stopMoonPhaseForOtherScene\(id\)/);
+});
+
+test('object labels use no canvas shadow or dark stroke outline',()=>{
+  const core=read('01-core.js');
+  const unified=core.slice(core.indexOf('g.fillText=function'),core.indexOf('})();let W=',core.indexOf('g.fillText=function')));
+  assert.match(unified,/g\.shadowColor="transparent";g\.shadowBlur=0/);
+  for(const file of ['02-didactic-orbits.js','11-precession-polaris.js','12-didactic-navigation.js','13-precession-labels.js']){
+    assert.doesNotMatch(read(file),/strokeText\(/,file+' must not outline object labels');
+  }
+});

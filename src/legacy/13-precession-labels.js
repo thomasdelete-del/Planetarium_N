@@ -35,10 +35,7 @@
       // ca. 60 % der normalen Himmelskörper-Beschriftung; bleibt unabhängig vom Zoom konstant.
       g.font=(8.4*px*(window.userLabelScale||1)*Math.max(.85,Math.min(1,Math.min(window.innerWidth,window.innerHeight)/430)))+'px Inter, system-ui, -apple-system, Segoe UI, sans-serif';
       g.textAlign='center'; g.textBaseline='middle';
-      g.lineWidth=3*px;
-      g.strokeStyle='rgba(0,0,0,.86)';
       g.fillStyle='rgba(235,246,255,.96)';
-      g.strokeText(st.label,x,y);
       g.fillText(st.label,x,y);
       g.restore();
     }catch(e){console.warn('Präzessions-Sternname konnte nicht gezeichnet werden',e);}
