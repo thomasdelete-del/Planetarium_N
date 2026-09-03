@@ -1,21 +1,22 @@
-# Planetarium 11 – Beta
+# Planetarium 11.35
 
-`Planetarium_N` ist die Betaversion eines interaktiven, browserbasierten
+`Planetarium_N` ist ein interaktives, browserbasiertes
 Planetariums. Die Anwendung verbindet eine frei dreh- und zoombare Himmelskarte
 mit didaktischen Szenen, astronomischen Simulationen, einem realistischen
 Beobachtermodus und einem sensorbasierten Lagemodus für Smartphones und Tablets.
 
-Die stabile Hauptversion wird getrennt im Repository
-[`Planetarium-`](https://github.com/thomasdelete-del/Planetarium-) gepflegt.
-Neue Funktionen werden zunächst hier getestet und erst nach ausdrücklicher
-Freigabe in die Hauptversion übernommen.
+Der freigegebene Stand wird in den beiden Repositories
+[`Planetarium_N`](https://github.com/thomasdelete-del/Planetarium_N) und
+[`Planetarium-`](https://github.com/thomasdelete-del/Planetarium-) synchron
+veröffentlicht.
 
 ## Online ausprobieren
 
-Die Beta kann über GitHub Pages veröffentlicht und unter folgender Adresse
-aufgerufen werden:
+Die Anwendung kann über GitHub Pages unter diesen Adressen aufgerufen werden:
 
 <https://thomasdelete-del.github.io/Planetarium_N/>
+
+<https://thomasdelete-del.github.io/Planetarium-/>
 
 Für Kamera, Standort und Gerätesensoren ist ein sicherer HTTPS-Aufruf
 erforderlich. Beim direkten Öffnen von `index.html` als lokale Datei stehen
@@ -37,7 +38,9 @@ diese Browserfunktionen meistens nicht zur Verfügung.
 ### Didaktische Szenen
 
 Vordefinierte Sprünge stellen Ort, Datum, Uhrzeit und Ansicht passend zum
-gewählten Thema ein. Dazu gehören unter anderem:
+gewählten Thema ein. Jeder Sprung setzt einen vollständigen Zielzustand; Ebenen
+und laufende Simulationen einer vorherigen Szene werden nicht versehentlich
+übernommen. Dazu gehören unter anderem:
 
 - Frühlings- und Herbstäquinoktium sowie Sommer- und Wintersonnenwende
 - Polartag, Polarnacht und Beobachtungen vom Äquator bis zu den Polen
@@ -55,6 +58,10 @@ Im Lagemodus folgt die virtuelle Kamera der räumlichen Ausrichtung des Geräts.
 Die Rückseite des Smartphones oder Tablets entspricht dabei der Blickrichtung
 einer realen Kamera: Wird das Gerät auf einen Bereich des Himmels gerichtet,
 zeigt die Anwendung denselben simulierten Himmelsausschnitt.
+
+Auf Smartphones startet die Anwendung direkt im Lagemodus, ohne vorgeschaltete
+Sensorabfrage. Eine auf iOS erforderliche Sensorfreigabe wird erst bei der
+ersten Bedienung angefordert.
 
 - Ein einfaches Antippen zeigt Informationen zum erkannten Himmelsobjekt.
 - Ein Doppeltipp reagiert wie im Beobachtermodus und schaltet die immersive
@@ -87,7 +94,7 @@ Kamera-Sichtfeld entstehen.
 ## Sternkatalog
 
 Der Rohkatalog `gaia_merged.bin` enthält 482.176 Sterne aus Gaia DR3. Für den
-normalen Start lädt die Anwendung `gaia_compact.bin` mit 481.880 sortierten und
+normalen Start lädt die Anwendung `gaia_compact.bin` mit 481.865 sortierten und
 deduplizierten Datensätzen. Der kompakte Katalog reduziert Lade- und
 Verarbeitungsaufwand. Importierte Rohkataloge werden in einem Web Worker
 aufbereitet, damit die Benutzeroberfläche währenddessen bedienbar bleibt.
@@ -150,7 +157,7 @@ npm run build:gaia
 
 ## Veröffentlichung mit GitHub Pages
 
-1. Das Repository `Planetarium_N` auf GitHub öffnen.
+1. Das gewünschte Repository `Planetarium_N` oder `Planetarium-` auf GitHub öffnen.
 2. **Settings → Pages** aufrufen.
 3. Unter **Build and deployment** die Quelle **Deploy from a branch** wählen.
 4. Den Branch **main** und den Ordner **/ (root)** auswählen.
@@ -162,6 +169,7 @@ Veröffentlichung angepasst werden müssen.
 
 ## Entwicklungsablauf
 
-Neue und experimentelle Funktionen werden in `Planetarium_N` entwickelt und
-getestet. `Planetarium-` bleibt davon unberührt. Eine getestete Beta wird nur
-nach ausdrücklicher Entscheidung in das stabile Repository übernommen.
+Neue Funktionen werden auf einem Arbeitsbranch entwickelt und mit den
+automatisierten Prüfungen getestet. Nach ausdrücklicher Freigabe wird derselbe
+geprüfte Commit in die Hauptbranches von `Planetarium_N` und `Planetarium-`
+übernommen, damit beide Veröffentlichungen denselben Stand zeigen.

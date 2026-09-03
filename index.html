@@ -24,7 +24,7 @@ if(location.protocol==="file:"){
 <div id="scroller">
 <section id="page-jumps" class="snap">
   <div class="jump-shell">
-    <div class="jump-title"><span class="title-main">Planetarium</span><span class="title-build">Version 11.31 · Build 20260831c · freigegeben</span></div>
+    <div class="jump-title"><span class="title-main">Planetarium</span><span class="title-build">Version 11.35 · Build 20260902b · freigegeben</span></div>
     <div class="jump-sub">Didaktische Sprünge, Simulationen und Sternbild-Lernmodus. Jeder Schalter setzt Ort, Datum und Uhrzeit astronomisch plausibel und springt direkt zur Sternkarte.</div>
     <button class="jump-home" data-scene-id="current">🏠 Aktueller Himmel ▾</button>
 
@@ -138,7 +138,7 @@ if(location.protocol==="file:"){
   </div>
 </section>
 <section id="page-sky" class="snap">
-<header><h1>Planetarium</h1><p>Version 11.31 · Build 20260831c · freigegeben</p><div id="verinfo">Version 11.31 · Build 20260831c · freigegeben</div></header>
+<header><h1>Planetarium</h1><p>Version 11.35 · Build 20260902b · freigegeben</p><div id="verinfo">Version 11.35 · Build 20260902b · freigegeben</div></header>
 <div id="readout">–</div>
 <div id="year-bar">
   <button class="yb-btn" id="yb-back" title="1 Jahr zurück · halten: 10, dann 100 Jahre">◂</button>
@@ -165,7 +165,7 @@ if(location.protocol==="file:"){
 <section id="page-panel" class="snap">
 <div id="panel-bar" data-action="scroll-to-sky"><span class="lg-title">🎛 Planetarium</span><button id="panel-close" data-action="scroll-to-sky" title="zurück zum Himmel">✕</button></div>
 <div id="panel-body">
-<div class="panel-sub">Simulierter Sternenhimmel · Tippen · Zoom · Karte<br>Version 11.31 · Build 20260831c · freigegeben</div>
+<div class="panel-sub">Simulierter Sternenhimmel · Tippen · Zoom · Karte<br>Version 11.35 · Build 20260902b · freigegeben</div>
 <div class="ctrls">
   <button class="btn on" id="ba" data-action="toggle-animation">⏸ Pause</button>
   <button class="btn" data-action="set-now">Jetzt</button>
@@ -326,7 +326,7 @@ if(location.protocol==="file:"){
       <div class="ag-row"><b>Sonnenjahr — andere Breite:</b> Unter dem Sonnenjahr-Schalter starten vier Knöpfe (Äquator/Wendekreis/Polarkreis/Pol) den Analemma-Lauf wahlweise an dieser geografischen Breite statt in Berlin.</div>
       <div class="ag-row"><b>Sonnenjahr:</b> Läuft mit 5 Tagen/s in feinen Schritten bei fester Uhrzeit und fester Zeitzone ohne Sommerzeit-Umschaltung — dadurch entsteht die Achterschleife des Analemmas gleichmäßig als wachsende Spur, ohne Sprung am Zeitumstellungstag. Die Ekliptik bleibt ausgeblendet, damit die Spur gut erkennbar ist. Der Lauf startet im Beobachtermodus mit fester Kamerahöhe von 26°, damit der Horizont bei allen vier Standorten (auch bei „Sonnenjahr — andere Breite") an derselben Bildstelle liegt und die unterschiedliche Sonnenhöhe vergleichbar wird.</div>
       <div class="ag-row"><b>↻ Neustart:</b> Auf der Startseite nach unten ziehen, dabei etwa eine Sekunde halten und dann loslassen: Das Planetarium lädt neu und stellt die Startkonfiguration wieder her. Kurzes Ziehen löst nichts aus, damit die Seite beim Blättern nicht versehentlich neu startet.</div>
-      <div class="ag-row"><b>🎓 Fokus-Modus:</b> Standardmäßig an. Jeder Sprung blendet nur die für das Thema nötigen Ebenen ein (z. B. Jahreszeiten: Sonne, Himmelsäquator, Wendekreise und Ekliptik — ohne Planeten, Mond, Zirkumpolarkreis, Tierkreis und Sternnamen; Mond nur in Mond-/Finsternis-Szenen, Planeten nur im Planetenlauf, Zirkumpolarkreis nur bei Tagesdrehung und Präzession). Die eigenen Einstellungen werden gesichert und beim Verlassen („Zurück zur Didaktik" oder „Aktueller Himmel") wiederhergestellt. Schalter oben auf der Sprungseite; aus = alle Ebenen bleiben wie eingestellt.</div>
+      <div class="ag-row"><b>🎓 Didaktische Zielansicht:</b> Jeder Sprung setzt vollständig und unmittelbar die für das gewählte Thema vorgesehenen Ebenen, Ort-, Zeit-, Zoom- und Simulationsparameter. Einstellungen oder laufende Simulationen der vorherigen Szene werden nicht übernommen; nur der Mondphasen-Schalter lässt den Mondphasenlauf weiterlaufen. Die normalen Einstellungen werden gesichert und beim Verlassen („Zurück zur Didaktik" oder „Aktueller Himmel") wiederhergestellt.</div>
       <div class="ag-row"><b>Szenen-Chips:</b> Während einer Szene erscheinen unter „Zurück zur Didaktik" Knöpfe: <b>⇄</b> schaltet in Jahreszeiten-Szenen zyklisch zur nächsten Jahreszeit weiter (Frühlings- → Sommer- → Herbst- → Winteranfang, exakt berechnet am aktuellen Ort); die aktuell dargestellte Jahreszeit wird beim Sprung und bei jedem Wechsel kurz eingeblendet; in anderen Szenen springt <b>⇄ Vergleich</b> zum didaktischen Gegenstück (Polartag↔Polarnacht, Heute↔Jahr 12000, Neumond↔Vollmond), <b>Weiter ›</b> führt durch die Themen-Sequenz (z. B. alle vier Jahreszeiten), dazu Zusatzebenen wie Dämmerung oder Sternnamen.</div>
       <div class="ag-row"><b>Sonnenbahn &amp; Analemma:</b> In Jahreszeiten- und Polarszenen wird der Tagbogen der Sonne als gestrichelte Linie eingezeichnet. Der Chip „Analemma" zeigt die Sonnenposition zur gleichen Uhrzeit über das ganze Jahr — die Achterschleife aus Ekliptikschiefe und Bahnexzentrizität.</div>
       <div class="ag-row"><b>Themenkarten:</b> Die Kategorien der Sprungseite sind einklappbar — Überschrift antippen öffnet eine Karte und schließt die übrigen.</div>
