@@ -69,12 +69,13 @@
     jumpScene=function(id){
       if(SEASON_TARGETS[id]) return jumpSeasonExact(id);
       if(id==='sim-moon-phases'){
-        // Mondphasenlauf beginnt didaktisch beim Vollmond.
+        // Mondphasenlauf beginnt am heutigen Datum, der Mond steht im Meridian.
         window.__moonPhaseTracking=true;
         window.__moonPhaseNeedsCenter=false;
-        if(typeof jumpMoonPhase==='function') jumpMoonPhase(180,'Mondphasenlauf · Vollmond','real');
+        if(typeof setSceneNow==='function') setSceneNow(52.52,13.405,'Berlin');
+        if(typeof setMoonTransitForCurrentDay==='function') setMoonTransitForCurrentDay();
         if(typeof window.startMoonPhaseDayRun==='function') window.startMoonPhaseDayRun();
-        setTimeout(()=>{ setMeridianForScene(id); if(typeof showToast==='function') showToast('Mond täglich im Meridian · feste Beobachter-Grundansicht'); },320);
+        setTimeout(()=>{ setMeridianForScene(id); if(typeof showToast==='function') showToast('Mondphasenlauf ab heute · Mond täglich im Meridian'); },320);
         return;
       }
       const r=oldJumpScene.apply(this,arguments);

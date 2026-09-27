@@ -18,3 +18,8 @@ test('zodiac constellation names use only the shared constellation drawing pass'
   assert.equal(source.includes('g.fillText(zc[0],P.x,P.y)'),false);
   assert.equal(source.includes('CON_LBL.forEach(cl=>'),false);
 });
+
+test('full precession view labels only the zodiac constellations',()=>{
+  assert.match(source,/const _precFullNames=\(window\.__didScene&&\/\^prec-\/\.test\(window\.__didScene\)\)&&zoom<=1\.05/);
+  assert.match(source,/if\(_precFullNames&&!ZCON\.some\(zc=>zc\[0\]===cl\.n\)\)return/);
+});

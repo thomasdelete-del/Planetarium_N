@@ -63,7 +63,8 @@
   function startPlanetRun(){
     window.didacticSimulationMode='planets';
     setNoLinesBase();
-    if(typeof setScene==='function') setScene(52.52,13.405,3,20,22*60,'Berlin');
+    if(typeof setSceneNow==='function') setSceneNow(52.52,13.405,'Berlin');
+    else if(typeof setScene==='function') setScene(52.52,13.405,3,20,22*60,'Berlin');
     setTimeout(()=>{
       setNoLinesBase();
       setSixHourSpeed();

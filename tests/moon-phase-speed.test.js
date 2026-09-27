@@ -14,14 +14,14 @@ test('delayed confirmations keep discrete moon days and planet 1 hour/s',()=>{
     assert.deepEqual(speeds,id==='sim-moon-phases'?[['day-step'],['day-step'],['day-step']]:[[speed,false],[speed,false],[speed,false]]);
   }
 });
-test('moon-phase scene starts at full moon with 86400 simulated seconds per second',()=>{
+test('moon-phase scene starts today at the lunar transit with discrete daily steps',()=>{
   const source=read('06-season-refinements.js');
   const start=source.indexOf("if(id==='sim-moon-phases'){");
   const block=source.slice(start,source.indexOf('const r=oldJumpScene',start));
   const calls=[];
-  const ctx={window:{startMoonPhaseDayRun:()=>calls.push('day-step')},jumpMoonPhase:(phase,label,view)=>{calls.push(phase);assert.equal(view,'real')},setTimeout(){}};
+  const ctx={window:{startMoonPhaseDayRun:()=>calls.push('day-step')},setSceneNow:(lat,lng,label)=>calls.push(['today',lat,lng,label]),setMoonTransitForCurrentDay:()=>calls.push('transit'),setTimeout(){}};
   vm.createContext(ctx);vm.runInContext(`(function(id){${block}})('sim-moon-phases');`,ctx);
-  assert.deepEqual(calls,[180,'day-step']);
+  assert.deepEqual(calls,[['today',52.52,13.405,'Berlin'],'transit','day-step']);
 });
 
 test('moon-phase run enters observer view and points at the moon',()=>{
@@ -42,7 +42,7 @@ test('moon-phase tracking is updated through the common draw pipeline',()=>{
   const source=readFileSync(new URL('../src/features/render/moonPhaseTracking.js',import.meta.url),'utf8');
   assert.match(source,/registerAroundDraw\("moon-phase-tracking"/);
   assert.match(source,/__trackMoonObserver/);
-  assert.match(read('01-core.js'),/window\.__moonPhaseTracking=true;window\.__moonPhaseNeedsCenter=false;jumpMoonPhase\(180,"Mondphasenlauf · Vollmond","real"\)/);
+  assert.match(read('01-core.js'),/window\.__moonPhaseTracking=true;window\.__moonPhaseNeedsCenter=false;setSceneNow\(52\.52,13\.405,"Berlin"\);setMoonTransitForCurrentDay\(\)/);
   assert.match(read('01-core.js'),/camFov=65;zoom=1;panX=0;panY=0/);
 });
 

@@ -157,7 +157,8 @@ test("local declination reference circles use stationary hour-angle samples", ()
 });
 
 test("Milky Way resolves progressively into denser Gaia stars near 2x", () => {
-  assert.match(core, /const mwZoomFade=_mwMag<=1\.2\?1:Math\.max\(0,1-\(_mwMag-1\.2\)\*\.56\)/);
+  assert.match(core, /const _mwLernfokus=window\.__forceMilkyWayFocus===true&&focusConstellation==="Sgr"/);
+  assert.match(core, /const mwZoomFade=_mwLernfokus\?1:\(_mwMag<=1\.2\?1:Math\.max\(0,1-\(_mwMag-1\.2\)\*\.56\)\)/);
   assert.match(core, /Math\.round\(16\/Math\.max\(1,zEff\*zEff\)\)/);
   assert.match(core, /Math\.min\(8,Math\.sqrt\(\(b-a\)\/180\)\)/);
   assert.match(core, /boost\[cell\]=Math\.max\(0,Math\.min\(5,Math\.round\(Math\.log2\(\(1\+5\.2\*plane\*bulge\)\*density\)\*2\)\)\)/);
